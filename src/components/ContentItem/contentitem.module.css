@@ -1,0 +1,47 @@
+.contentitem {
+    padding: 10px 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+
+    .top {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        grid-column: span 2;
+    }
+
+    .title {
+        max-width: 80%;
+        font-weight: 600;
+    }
+
+    .divider {
+        margin: 10px 0 10px 0;
+        grid-column: span 2;
+    }
+}
+
+.contentItemDetail {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .name {
+        font-weight: 600;
+    }
+
+    .content {
+        font-weight: 400;
+    }
+
+    p {
+        margin-block-start: 0.5em;
+        margin-block-end: 0.5em;
+    }
+
+}
+
+
+.notes {
+    height: 100%;
+}
