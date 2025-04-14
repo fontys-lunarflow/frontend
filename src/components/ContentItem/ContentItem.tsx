@@ -45,11 +45,15 @@ const contentItemDetail = ({icon, name, text} : ContentItemDetailProps) => {
     </div>)
 }
 
-export function ContentItem() {
+export type ContentItemProps = {
+    title: string;
+}
+
+export function ContentItem({title} : ContentItemProps) {
     return (<Paper elevation={3} className={classes.contentitem}>
         <div className={classes.top}>
             <Avatar sx={{ bgcolor: orange[500]}}>I</Avatar>
-            <Typography variant="subtitle2" className={classes.title}>Women and Software-Defined Vehicles: Shaping the Female future of mobility</Typography>
+            <Typography variant="subtitle2" className={classes.title}>{title}</Typography>
             <div className={classes.buttons}>
                 <IconButton><EditIcon /></IconButton>
                 <IconButton><MoreVertIcon /></IconButton>
