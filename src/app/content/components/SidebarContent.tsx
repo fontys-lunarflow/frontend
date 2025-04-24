@@ -27,13 +27,15 @@ interface SidebarContentProps {
   selectedDate: Date | null;
   handleCalendarToggle: () => void;
   setSelectedDate: (date: Date | null) => void;
+  refreshContentItems?: () => void;
 }
 
 const SidebarContent: React.FC<SidebarContentProps> = ({ 
   calendarOpen, 
   selectedDate, 
   handleCalendarToggle,
-  setSelectedDate
+  setSelectedDate,
+  refreshContentItems
 }) => {
   const theme = useTheme();
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -44,6 +46,9 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
 
   const handleCloseCreateModal = () => {
     setCreateModalOpen(false);
+    if (refreshContentItems) {
+      refreshContentItems();
+    }
   };
 
   return (

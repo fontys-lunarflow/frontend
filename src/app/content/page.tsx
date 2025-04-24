@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Box, SelectChangeEvent } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, SelectChangeEvent, CircularProgress } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { colors } from '@/lib/config/colors';
+import M3Typography from '@/components/M3Typography';
 
 // Global layout components
 import Header from '@/components/layout/Header';
@@ -14,7 +14,11 @@ import ContentList from './components/ContentList';
 import SidebarContent from './components/SidebarContent';
 
 // Utilities
-import { contentItems, groupItemsByDate, formatDate } from './utils/dataUtils';
+import { ContentItem } from '@/lib/config/api';
+import { colors } from '@/lib/config/colors';
+
+// Server actions
+import { fetchContentItems } from './actions';
 
 // Sidebar width - follow Material Design 3 guidelines
 const drawerWidth = 304; // 19 * 16px = 304px
@@ -25,6 +29,36 @@ export default function ContentListPage() {
   const [filterValue, setFilterValue] = useState('');
   const [calendarOpen, setCalendarOpen] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  
+  // State for content items from API
+  const [contentItems, setContentItems] = useState<ContentItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Fetch content items from API using server action
+  useEffect(() => {
+    getContentItems();
+  }, []);
+  
+  const getContentItems = async () => {
+    try {
+      setLoading(true);
+      
+      const result = await fetchContentItems();
+      
+      if (result.success) {
+        setContentItems(result.data || []);
+        setError(null);
+      } else {
+        setError(result.error || 'Unknown error occurred');
+      }
+    } catch (err) {
+      console.error('Failed to fetch content items:', err);
+      setError('An unexpected error occurred. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const handleDrawerToggle = () => {
     setOpen(!open);
@@ -37,9 +71,6 @@ export default function ContentListPage() {
   const handleCalendarToggle = () => {
     setCalendarOpen(!calendarOpen);
   };
-
-  // Group content items by date
-  const groupedItems = groupItemsByDate(contentItems);
 
   return (
     <Box sx={{ display: 'flex', height: '100vh' }}>
@@ -60,6 +91,7 @@ export default function ContentListPage() {
           selectedDate={selectedDate}
           handleCalendarToggle={handleCalendarToggle}
           setSelectedDate={setSelectedDate}
+          refreshContentItems={getContentItems}
         />
       </Sidebar>
       
@@ -93,7 +125,17 @@ export default function ContentListPage() {
           backgroundColor: colors.white,
         }}
       >
-          <ContentList groupedItems={groupedItems} formatDate={formatDate} />
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+              <CircularProgress />
+            </Box>
+          ) : error ? (
+            <Box sx={{ textAlign: 'center', p: 4 }}>
+              <M3Typography variant="body1" color="error">{error}</M3Typography>
+            </Box>
+          ) : (
+            <ContentList contentItems={contentItems} onRefresh={getContentItems} />
+          )}
         </Box>
       </Box>
     </Box>

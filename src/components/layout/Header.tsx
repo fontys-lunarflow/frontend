@@ -54,19 +54,20 @@ const Header: React.FC<HeaderProps> = ({
         </IconButton>
         
         {/* Logo */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mr: 4, ml: 1, position: 'relative' }}>
           <Box 
+            component="img"
+            src="/logo.svg"
+            alt="Eclipse Logo"
             sx={{ 
-              width: 28, 
-              height: 28, 
-              borderRadius: '50%', 
-              backgroundColor: theme.palette.primary.main,
-              mr: 1
+              width: 65,
+              height: 65,
+              transform: 'scale(1.8)',
+              transformOrigin: 'left center',
+              position: 'relative',
+              zIndex: 1
             }} 
           />
-          <M3Typography variant="h6" color="inherit" noWrap>
-            eclipse
-          </M3Typography>
         </Box>
         
         {/* Custom content */}
