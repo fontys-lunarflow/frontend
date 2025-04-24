@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "clean": "rm -rf .next node_modules next-env.d.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
