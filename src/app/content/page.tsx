@@ -11,6 +11,7 @@ import Sidebar from '@/components/layout/Sidebar';
 
 // Content-specific components
 import ContentList from './components/ContentList';
+import ContentCalendar from './components/ContentCalendar';
 import SidebarContent from './components/SidebarContent';
 
 // Utilities
@@ -19,6 +20,9 @@ import { colors } from '@/lib/config/colors';
 
 // Server actions
 import { fetchContentItems } from './actions';
+
+// Available view modes
+type ViewMode = 'list' | 'calendar';
 
 // Sidebar width - follow Material Design 3 guidelines
 const drawerWidth = 304; // 19 * 16px = 304px
@@ -29,6 +33,7 @@ export default function ContentListPage() {
   const [filterValue, setFilterValue] = useState('');
   const [calendarOpen, setCalendarOpen] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   
   // State for content items from API
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
@@ -72,13 +77,24 @@ export default function ContentListPage() {
     setCalendarOpen(!calendarOpen);
   };
 
+  const handleViewModeChange = (
+    _event: React.MouseEvent<HTMLElement>,
+    newViewMode: ViewMode | null,
+  ) => {
+    if (newViewMode !== null) {
+      setViewMode(newViewMode);
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', height: '100vh' }}>
       {/* App Bar */}
       <Header 
         filterValue={filterValue} 
         handleDrawerToggle={handleDrawerToggle} 
-        handleFilterChange={handleFilterChange} 
+        handleFilterChange={handleFilterChange}
+        viewMode={viewMode}
+        handleViewModeChange={handleViewModeChange}
       />
       
       {/* Sidebar */}
@@ -108,23 +124,23 @@ export default function ContentListPage() {
             duration: theme.transitions.duration.standard,
           }),
           display: 'flex',
-          justifyContent: 'center',
+          flexDirection: 'column',
           backgroundColor: colors.white, // White background for content area
           minHeight: '100vh',
           borderTopLeftRadius: '24px', // Add rounded top-left corner to main area
           overflow: 'hidden',
         }}
       >
-       <Box
-        sx={{
-          width: '100%',
-          maxWidth: '750px',
-          mx: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: colors.white,
-        }}
-      >
+        {/* Content Area */}
+        <Box
+          sx={{
+            width: '100%',
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: colors.white,
+          }}
+        >
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
               <CircularProgress />
@@ -133,8 +149,10 @@ export default function ContentListPage() {
             <Box sx={{ textAlign: 'center', p: 4 }}>
               <M3Typography variant="body1" color="error">{error}</M3Typography>
             </Box>
-          ) : (
+          ) : viewMode === 'list' ? (
             <ContentList contentItems={contentItems} onRefresh={getContentItems} />
+          ) : (
+            <ContentCalendar contentItems={contentItems} refreshContentItems={getContentItems} />
           )}
         </Box>
       </Box>

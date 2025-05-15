@@ -13,8 +13,10 @@ import {
   Button,
   Snackbar,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Chip
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import M3Typography from '@/components/M3Typography';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
@@ -22,21 +24,28 @@ import LinkIcon from '@mui/icons-material/Link';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import { useRouter } from 'next/navigation';
 import { deleteContentItemById, fetchProjects } from '../actions';
+import moment from 'moment';
 
 interface ContentCardProps {
   id: number;
   title: string;
   bookmarked: boolean;
-  subject: string;
-  topic: string;
+  subject?: string;
+  topic?: string;
   project?: {
     id: number;
     name: string;
     color?: string;
   };
   projectId?: number; // Keep for backward compatibility
+  status?: string;
+  lifecycleStage?: string;
+  publicationDate?: string;
   onDelete?: () => void;
 }
 
@@ -48,6 +57,9 @@ const ContentCard: React.FC<ContentCardProps> = ({
   topic, 
   project,
   projectId,
+  status,
+  lifecycleStage,
+  publicationDate,
   onDelete 
 }) => {
   const [open, setOpen] = useState(false);
@@ -55,6 +67,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const theme = useTheme();
   
   // Project data state
   const [projectName, setProjectName] = useState<string>('');
@@ -159,6 +172,26 @@ const ContentCard: React.FC<ContentCardProps> = ({
     }
   };
 
+  const handleExpand = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click or popover from closing
+    router.push(`/content/${id}`);
+    handleClose();
+  };
+
+  // Get card background color based on status (no longer used for primary color approach)
+  const getCardColor = () => {
+    // Use primary color from theme
+    return theme.palette.primary.main;
+  };
+
+  // Get formatted publication date
+  const getFormattedDate = () => {
+    if (publicationDate) {
+      return moment(publicationDate).format('MMM DD, YYYY');
+    }
+    return 'Not scheduled';
+  };
+
   return (
     <>
       <Card 
@@ -169,8 +202,8 @@ const ContentCard: React.FC<ContentCardProps> = ({
           width: '100%',
           p: 2.5,
           borderRadius: '8px',
-          backgroundColor: '#40C4FF', // Cyan blue to match the image
-          color: 'white',
+          backgroundColor: getCardColor(),
+          color: theme.palette.primary.contrastText,
           boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.07)',
           cursor: 'pointer',
           '&:hover': {
@@ -210,21 +243,57 @@ const ContentCard: React.FC<ContentCardProps> = ({
               </IconButton>
             </Box>
           </Box>
-          {/* Project name row */}
-          <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-            <Box
-              sx={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                bgcolor: projectColor || 'white', // Use white as visual default, don't modify data
-                mr: 1,
-                opacity: 0.9
-              }}
-            />
-            <M3Typography variant="caption" color="inherit" sx={{ opacity: 0.9 }}>
-              {projectName || (project ? project.name : `Project #${projectId || '?'}`)}
-            </M3Typography>
+          
+          {/* Project and Status row */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: projectColor || 'white',
+                  mr: 1,
+                  opacity: 0.9
+                }}
+              />
+              <M3Typography variant="caption" color="inherit" sx={{ opacity: 0.9 }}>
+                {projectName || (project ? project.name : `Project #${projectId || '?'}`)}
+              </M3Typography>
+            </Box>
+            
+            {status && (
+              <Chip 
+                label={status} 
+                size="small"
+                sx={{ 
+                  height: 20, 
+                  fontSize: '0.6rem',
+                  backgroundColor: 'rgba(255,255,255,0.3)',
+                  color: theme.palette.primary.contrastText,
+                  ml: 1
+                }}
+              />
+            )}
+          </Box>
+          
+          {/* Publication Date and Lifecycle Stage */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <CalendarTodayIcon sx={{ fontSize: 12, mr: 0.5, opacity: 0.9 }} />
+              <M3Typography variant="caption" color="inherit" sx={{ opacity: 0.9 }}>
+                {getFormattedDate()}
+              </M3Typography>
+            </Box>
+            
+            {lifecycleStage && (
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <AssignmentIcon sx={{ fontSize: 12, mr: 0.5, opacity: 0.9 }} />
+                <M3Typography variant="caption" color="inherit" sx={{ opacity: 0.9 }}>
+                  {lifecycleStage}
+                </M3Typography>
+              </Box>
+            )}
           </Box>
         </Box>
       </Card>
@@ -267,7 +336,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
                   width: 16, 
                   height: 16, 
                   borderRadius: '4px', 
-                  backgroundColor: '#40C4FF',
+                  backgroundColor: theme.palette.primary.main,
                   mr: 2
                 }} 
               />
@@ -289,6 +358,13 @@ const ContentCard: React.FC<ContentCardProps> = ({
                 onClick={handleDeleteClick}
               >
                 <DeleteIcon fontSize="small" />
+              </IconButton>
+              <IconButton 
+                size="small" 
+                sx={{ color: 'text.secondary' }}
+                onClick={handleExpand}
+              >
+                <OpenInNewIcon fontSize="small" />
               </IconButton>
               <IconButton size="small" onClick={handleClose} sx={{ color: 'text.secondary' }}>
                 <CloseIcon fontSize="small" />

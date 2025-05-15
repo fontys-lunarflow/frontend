@@ -9,10 +9,15 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
+  ToggleButtonGroup,
+  ToggleButton,
+  useMediaQuery
 } from '@mui/material';
 import M3Typography from '@/components/M3Typography';
 import MenuIcon from '@mui/icons-material/Menu';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import CalendarViewMonthIcon from '@mui/icons-material/CalendarViewMonth';
 import { useTheme } from '@mui/material/styles';
 import { colors } from '@/lib/config/colors';
 
@@ -20,6 +25,11 @@ interface HeaderProps {
   filterValue: string;
   handleDrawerToggle: () => void;
   handleFilterChange: (event: SelectChangeEvent) => void;
+  viewMode?: 'list' | 'calendar';
+  handleViewModeChange?: (
+    event: React.MouseEvent<HTMLElement>,
+    newViewMode: 'list' | 'calendar' | null,
+  ) => void;
   children?: React.ReactNode;
 }
 
@@ -27,9 +37,12 @@ const Header: React.FC<HeaderProps> = ({
   filterValue, 
   handleDrawerToggle, 
   handleFilterChange,
+  viewMode = 'list',
+  handleViewModeChange,
   children 
 }) => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
     <AppBar 
@@ -78,6 +91,25 @@ const Header: React.FC<HeaderProps> = ({
         
         {/* Filters - moved to right side */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          
+          {/* View Mode Toggle */}
+          {handleViewModeChange && (
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              onChange={handleViewModeChange}
+              aria-label="view mode"
+              size={isMobile ? "small" : "medium"}
+              sx={{ mr: 1 }}
+            >
+              <ToggleButton value="list" aria-label="list view">
+                <ViewListIcon />
+              </ToggleButton>
+              <ToggleButton value="calendar" aria-label="calendar view">
+                <CalendarViewMonthIcon />
+              </ToggleButton>
+            </ToggleButtonGroup>
+          )}
           
           {/* View filter dropdown */}
           <FormControl variant="outlined" size="small" sx={{ minWidth: 120 }}>

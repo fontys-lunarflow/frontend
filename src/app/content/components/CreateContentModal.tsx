@@ -17,15 +17,27 @@ import {
   FormControl,
   InputLabel,
   FormHelperText,
-  CircularProgress
+  CircularProgress,
+  Tabs,
+  Tab,
+  Autocomplete,
+  Chip,
+  Grid
 } from '@mui/material';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import CloseIcon from '@mui/icons-material/Close';
+import PersonIcon from '@mui/icons-material/Person';
+import TagIcon from '@mui/icons-material/Tag';
 import { ContentItem } from '@/lib/config/api';
 import { createNewContentItem, fetchProjects } from '../actions';
 
 interface CreateContentModalProps {
   open: boolean;
   onClose: () => void;
+  defaultPublicationDate?: string;
 }
 
 // Project interface for the dropdown
@@ -36,11 +48,25 @@ interface Project {
   description?: string;
 }
 
-const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose }) => {
+// Enum options for dropdown fields
+const LIFECYCLE_STAGES = ['AWARENESS', 'CONSIDERATION', 'DECISION', 'IMPLEMENTATION', 'LOYALTY'];
+const STATUS_OPTIONS = ['BACKLOG', 'IN_PROGRESS', 'REVIEW', 'COMPLETED'];
+
+const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, defaultPublicationDate }) => {
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('');
   const [topic, setTopic] = useState('');
   const [projectId, setProjectId] = useState<number | ''>('');
+  const [selectedTab, setSelectedTab] = useState(0);
+  
+  // New fields
+  const [personResponsibleId, setPersonResponsibleId] = useState('');
+  const [lifecycleStage, setLifecycleStage] = useState('AWARENESS');
+  const [status, setStatus] = useState('BACKLOG');
+  const [personas, setPersonas] = useState<string[]>([]);
+  const [channels, setChannels] = useState<string[]>([]);
+  const [publicationDate, setPublicationDate] = useState<Date | null>(defaultPublicationDate ? new Date(defaultPublicationDate) : null);
+  const [publicationTime, setPublicationTime] = useState<Date | null>(defaultPublicationDate ? new Date(defaultPublicationDate) : null);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +110,10 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose }
     }
   };
 
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setSelectedTab(newValue);
+  };
+
   const handleSubmit = async () => {
     try {
       setLoading(true);
@@ -104,11 +134,28 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose }
         return;
       }
 
+      // Combine date and time for publication
+      let finalPublicationDate = publicationDate;
+      
+      if (finalPublicationDate && publicationTime) {
+        // Create a new date object with the date from publicationDate and time from publicationTime
+        finalPublicationDate = new Date(finalPublicationDate);
+        finalPublicationDate.setHours(publicationTime.getHours());
+        finalPublicationDate.setMinutes(publicationTime.getMinutes());
+      }
+
       const contentItem: ContentItem = {
         title,
         subject,
         topic,
-        projectId: numericProjectId
+        projectId: numericProjectId,
+        // New fields
+        personResponsibleId: personResponsibleId || undefined,
+        lifecycleStage,
+        status,
+        personas,
+        channels,
+        publicationDate: finalPublicationDate?.toISOString()
       };
 
       console.log('Submitting content item via server action:', contentItem);
@@ -124,6 +171,14 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose }
         setSubject('');
         setTopic('');
         setProjectId('');
+        setPersonResponsibleId('');
+        setLifecycleStage('AWARENESS');
+        setStatus('BACKLOG');
+        setPersonas([]);
+        setChannels([]);
+        setPublicationDate(null);
+        setPublicationTime(null);
+        setSelectedTab(0);
         
         // Close modal after a short delay
         setTimeout(() => {
@@ -146,8 +201,21 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose }
     setSubject('');
     setTopic('');
     setProjectId('');
+    setPersonResponsibleId('');
+    setLifecycleStage('AWARENESS');
+    setStatus('BACKLOG');
+    setPersonas([]);
+    setChannels([]);
+    setPublicationDate(null);
+    setPublicationTime(null);
+    setSelectedTab(0);
     setError(null);
     onClose();
+  };
+
+  // Generate a unique key for each persona/channel
+  const getUniqueKey = (prefix: string, item: string, index: number) => {
+    return `${prefix}-${item}-${index}`;
   };
 
   return (
@@ -207,69 +275,206 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose }
             </Alert>
           )}
           
-          <Stack spacing={3}>
-            <TextField
-              label="Subject"
-              fullWidth
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              required
-            />
-            
-            <TextField
-              label="Topic"
-              fullWidth
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              required
-            />
-            
-            <FormControl fullWidth required error={!!projectsError}>
-              <InputLabel id="project-select-label">Project</InputLabel>
-              <Select
-                labelId="project-select-label"
-                id="project-select"
-                value={projectId}
-                label="Project"
-                onChange={(e) => {
-                  const value = e.target.value;
-                  console.log("Selected project value:", value);
-                  setProjectId(value as number);
-                }}
-                disabled={projectsLoading}
-                startAdornment={
-                  projectsLoading ? (
-                    <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                  ) : null
+          <Tabs value={selectedTab} onChange={handleTabChange} sx={{ mb: 3 }}>
+            <Tab label="Basic Info" />
+            <Tab label="Additional Info" />
+          </Tabs>
+          
+          {selectedTab === 0 && (
+            <Stack spacing={3}>
+              <TextField
+                label="Subject"
+                fullWidth
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                required
+              />
+              
+              <TextField
+                label="Topic"
+                fullWidth
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                required
+              />
+              
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
+                <FormControl fullWidth required error={!!projectsError}>
+                  <InputLabel id="project-select-label">Project</InputLabel>
+                  <Select
+                    labelId="project-select-label"
+                    id="project-select"
+                    value={projectId}
+                    label="Project"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      console.log("Selected project value:", value);
+                      setProjectId(value as number);
+                    }}
+                    disabled={projectsLoading}
+                    startAdornment={
+                      projectsLoading ? (
+                        <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                      ) : null
+                    }
+                  >
+                    {projects.map((project) => (
+                      <MenuItem key={project.id} value={project.id}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          {project.color && (
+                            <Box
+                              sx={{
+                                width: 16,
+                                height: 16,
+                                borderRadius: '50%',
+                                bgcolor: project.color,
+                                mr: 1
+                              }}
+                            />
+                          )}
+                          {project.name}
+                        </Box>
+                      </MenuItem>
+                    ))}
+                    {projects.length === 0 && !projectsLoading && (
+                      <MenuItem disabled value="">
+                        No projects available
+                      </MenuItem>
+                    )}
+                  </Select>
+                  {projectsError && <FormHelperText>{projectsError}</FormHelperText>}
+                </FormControl>
+
+                <TextField
+                  label="Person Responsible"
+                  fullWidth
+                  value={personResponsibleId}
+                  onChange={(e) => setPersonResponsibleId(e.target.value)}
+                  InputProps={{
+                    startAdornment: <PersonIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />,
+                  }}
+                />
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
+                <FormControl fullWidth>
+                  <InputLabel id="status-select-label">Status</InputLabel>
+                  <Select
+                    labelId="status-select-label"
+                    value={status}
+                    label="Status"
+                    onChange={(e) => setStatus(e.target.value)}
+                  >
+                    {STATUS_OPTIONS.map(statusOption => (
+                      <MenuItem key={statusOption} value={statusOption}>{statusOption}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                
+                <FormControl fullWidth>
+                  <InputLabel id="lifecycle-select-label">Lifecycle Stage</InputLabel>
+                  <Select
+                    labelId="lifecycle-select-label"
+                    value={lifecycleStage}
+                    label="Lifecycle Stage"
+                    onChange={(e) => setLifecycleStage(e.target.value)}
+                  >
+                    {LIFECYCLE_STAGES.map(stage => (
+                      <MenuItem key={stage} value={stage}>{stage}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            </Stack>
+          )}
+
+          {selectedTab === 1 && (
+            <Stack spacing={3}>
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={7}>
+                    <DatePicker
+                      label="Publication Date"
+                      value={publicationDate}
+                      onChange={(date) => setPublicationDate(date)}
+                      slotProps={{
+                        textField: { 
+                          fullWidth: true, 
+                          helperText: 'When this content will be published'
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={5}>
+                    <TimePicker
+                      label="Publication Time"
+                      value={publicationTime}
+                      onChange={(time) => setPublicationTime(time)}
+                      slotProps={{
+                        textField: { 
+                          fullWidth: true, 
+                          helperText: 'Time of publication'
+                        }
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+              </LocalizationProvider>
+
+              <Autocomplete
+                multiple
+                options={[]}
+                freeSolo
+                value={personas}
+                onChange={(_, newValue) => setPersonas(newValue)}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip
+                      {...getTagProps({ index })}
+                      key={getUniqueKey('persona', option, index)}
+                      label={option}
+                      icon={<PersonIcon />}
+                    />
+                  ))
                 }
-              >
-                {projects.map((project) => (
-                  <MenuItem key={project.id} value={project.id}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      {project.color && (
-                        <Box
-                          sx={{
-                            width: 16,
-                            height: 16,
-                            borderRadius: '50%',
-                            bgcolor: project.color,
-                            mr: 1
-                          }}
-                        />
-                      )}
-                      {project.name}
-                    </Box>
-                  </MenuItem>
-                ))}
-                {projects.length === 0 && !projectsLoading && (
-                  <MenuItem disabled value="">
-                    No projects available
-                  </MenuItem>
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Personas"
+                    placeholder="Add personas"
+                    fullWidth
+                  />
                 )}
-              </Select>
-              {projectsError && <FormHelperText>{projectsError}</FormHelperText>}
-            </FormControl>
-          </Stack>
+              />
+
+              <Autocomplete
+                multiple
+                options={[]}
+                freeSolo
+                value={channels}
+                onChange={(_, newValue) => setChannels(newValue)}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip
+                      {...getTagProps({ index })}
+                      key={getUniqueKey('channel', option, index)}
+                      label={option}
+                      icon={<TagIcon />}
+                      variant="outlined"
+                    />
+                  ))
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Channels"
+                    placeholder="Add channels"
+                    fullWidth
+                  />
+                )}
+              />
+            </Stack>
+          )}
         </DialogContent>
 
         <Divider />

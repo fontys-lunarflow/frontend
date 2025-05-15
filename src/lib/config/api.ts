@@ -14,6 +14,21 @@ export interface ContentItem {
   subject: string;
   topic: string;
   projectId: number;
+  // New fields
+  personResponsibleId?: string;
+  gitlabIssueUrl?: string | null;
+  gitlabId?: number | null;
+  lifecycleStage?: string;
+  status?: string;
+  personas?: string[];
+  channels?: string[];
+  publicationDate?: string;
+  // Project object (populated in responses)
+  project?: {
+    id: number;
+    name: string;
+    color?: string;
+  };
   // Additional optional fields
   date?: string;
   bookmarked?: boolean;
@@ -23,10 +38,10 @@ export interface ContentItem {
   owners?: string[];
   topics?: string[];
   department?: string;
-  project?: string;
   gitlabLink?: string;
   startTime?: string;
   endTime?: string;
   timezone?: string;
   participants?: string[];
+  content?: string;
 } 
