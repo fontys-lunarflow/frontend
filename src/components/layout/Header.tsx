@@ -4,27 +4,19 @@ import {
   Toolbar, 
   IconButton, 
   Box, 
-  Avatar, 
-  FormControl,
-  Select,
-  MenuItem,
-  SelectChangeEvent,
   ToggleButtonGroup,
   ToggleButton,
   useMediaQuery
 } from '@mui/material';
-import M3Typography from '@/components/M3Typography';
+import AuthButton from '@/components/AuthButton';
 import MenuIcon from '@mui/icons-material/Menu';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import CalendarViewMonthIcon from '@mui/icons-material/CalendarViewMonth';
 import { useTheme } from '@mui/material/styles';
 import { colors } from '@/lib/config/colors';
 
 interface HeaderProps {
-  filterValue: string;
   handleDrawerToggle: () => void;
-  handleFilterChange: (event: SelectChangeEvent) => void;
   viewMode?: 'list' | 'calendar';
   handleViewModeChange?: (
     event: React.MouseEvent<HTMLElement>,
@@ -34,9 +26,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-  filterValue, 
   handleDrawerToggle, 
-  handleFilterChange,
   viewMode = 'list',
   handleViewModeChange,
   children 
@@ -52,7 +42,6 @@ const Header: React.FC<HeaderProps> = ({
         backgroundColor: colors.uiLightGray,
         color: theme.palette.secondary.dark,
         boxShadow: 'none',
-        borderBottom: `1px solid ${theme.palette.divider}`
       }}
     >
       <Toolbar sx={{ px: { xs: 1, sm: 2 } }}>
@@ -67,18 +56,19 @@ const Header: React.FC<HeaderProps> = ({
         </IconButton>
         
         {/* Logo */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mr: 4, ml: 1, position: 'relative' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 4, ml: 3 }}>
           <Box 
             component="img"
             src="/logo.svg"
             alt="Eclipse Logo"
             sx={{ 
-              width: 65,
-              height: 65,
-              transform: 'scale(1.8)',
-              transformOrigin: 'left center',
-              position: 'relative',
-              zIndex: 1
+              width: 80,
+              height: 80,
+              transform: 'scale(2.2)',
+              transformOrigin: 'center center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }} 
           />
         </Box>
@@ -89,7 +79,7 @@ const Header: React.FC<HeaderProps> = ({
         {/* Spacer */}
         <Box sx={{ flexGrow: 1 }} />
         
-        {/* Filters - moved to right side */}
+        {/* Controls on right side */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           
           {/* View Mode Toggle */}
@@ -110,35 +100,9 @@ const Header: React.FC<HeaderProps> = ({
               </ToggleButton>
             </ToggleButtonGroup>
           )}
-          
-          {/* View filter dropdown */}
-          <FormControl variant="outlined" size="small" sx={{ minWidth: 120 }}>
-            <Select
-              value={filterValue}
-              onChange={handleFilterChange}
-              displayEmpty
-              startAdornment={<FilterListIcon sx={{ ml: 1 }} />}
-              sx={{ 
-                borderRadius: '50px',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: theme.palette.divider
-                }
-              }}
-            >
-              <MenuItem value="">
-                <em>List View</em>
-              </MenuItem>
-              <MenuItem value="filter1">Filter 1</MenuItem>
-              <MenuItem value="filter2">Filter 2</MenuItem>
-            </Select>
-          </FormControl>
 
-          {/* User avatar */}
-          <IconButton color="inherit">
-            <Avatar sx={{ width: 32, height: 32 }}>
-              <M3Typography variant="body2">U</M3Typography>
-            </Avatar>
-          </IconButton>
+          {/* Authentication Button */}
+          <AuthButton />
         </Box>
       </Toolbar>
     </AppBar>

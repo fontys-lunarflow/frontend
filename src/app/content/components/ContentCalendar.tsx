@@ -13,12 +13,12 @@ import {
   Button
 } from '@mui/material';
 import { ContentItem } from '@/lib/config/api';
-import { useRouter } from 'next/navigation';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import TodayIcon from '@mui/icons-material/Today';
 import M3Typography from '@/components/M3Typography';
 import CreateContentModal from './CreateContentModal';
+import ContentItemModal from './ContentItemModal';
 
 // Import styles
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -35,13 +35,61 @@ const clickEffectStyles = `
   }
 `;
 
+// Add custom styles for better calendar appearance
+const calendarStyles = `
+  .rbc-calendar {
+    font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  }
+  
+  .rbc-header {
+    padding: 10px 3px;
+    font-weight: 500;
+    font-size: 0.875rem;
+  }
+  
+  .rbc-month-view {
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+  }
+  
+  .rbc-time-view {
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+  }
+  
+  .rbc-day-bg {
+    transition: background-color 0.2s ease;
+  }
+  
+  .rbc-day-bg:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+  }
+  
+  .rbc-event {
+    border-radius: 4px;
+    padding: 2px 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  }
+  
+  .rbc-today {
+    background-color: rgba(66, 165, 245, 0.08);
+  }
+  
+  .rbc-off-range-bg {
+    background-color: #f9f9f9;
+  }
+`;
+
 // Setup moment localizer for react-big-calendar
 const localizer = momentLocalizer(moment);
 
 interface ContentCalendarProps {
   contentItems: ContentItem[];
-  onSelectEvent?: (contentItem: ContentItem) => void;
   refreshContentItems?: () => void;
+  view?: View;
+  onViewChange?: (view: View) => void;
+  date?: Date;
+  onDateChange?: (date: Date) => void;
 }
 
 // Event interface for the calendar
@@ -55,17 +103,32 @@ interface CalendarEvent {
 
 const ContentCalendar: React.FC<ContentCalendarProps> = ({ 
   contentItems, 
-  onSelectEvent,
-  refreshContentItems
+  refreshContentItems,
+  view: externalView,
+  onViewChange: externalOnViewChange,
+  date: externalDate,
+  onDateChange: externalOnDateChange
 }) => {
   const theme = useTheme();
-  const router = useRouter();
-  const [view, setView] = useState<View>('month');
-  const [date, setDate] = useState(new Date());
+  
+  // Use external state if provided, otherwise use local state
+  const [localView, setLocalView] = useState<View>('month');
+  const [localDate, setLocalDate] = useState(new Date());
+  
+  const view = externalView !== undefined ? externalView : localView;
+  const date = externalDate !== undefined ? externalDate : localDate;
+  
+  const setView = externalOnViewChange || setLocalView;
+  const setDate = externalOnDateChange || setLocalDate;
   
   // State for the create content dialog
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{ start: Date, end: Date } | null>(null);
+  
+  // State for content item modal
+  const [contentModalOpen, setContentModalOpen] = useState(false);
+  const [selectedContentItem, setSelectedContentItem] = useState<ContentItem | null>(null);
+  const [modalAnchorEl, setModalAnchorEl] = useState<HTMLElement | null>(null);
   
   // Track click position for visual feedback
   const [clickPosition, setClickPosition] = useState<{ x: number, y: number } | null>(null);
@@ -81,55 +144,71 @@ const ContentCalendar: React.FC<ContentCalendarProps> = ({
   }, []);
 
   // Convert content items to calendar events
-  const events: CalendarEvent[] = contentItems.map(item => {
-    let startDate;
-    
-    // Try to use publicationDate first, then date, then fallback to current date
-    if (item.publicationDate) {
-      startDate = new Date(item.publicationDate);
-    } else if (item.date) {
-      startDate = new Date(item.date);
-    } else {
-      startDate = new Date();
-    }
-    
-    // If we have startTime, update the hours/minutes
-    if (item.startTime) {
-      const startTime = new Date(item.startTime);
-      startDate.setHours(startTime.getHours());
-      startDate.setMinutes(startTime.getMinutes());
-    }
-    
-    // Calculate end date/time
-    let endDate;
-    if (item.endTime) {
-      endDate = new Date(item.endTime);
-    } else {
-      // Default to 1 hour duration
-      endDate = new Date(startDate);
-      endDate.setHours(endDate.getHours() + 1);
-    }
-    
-    return {
-      id: item.id,
-      title: item.title,
-      start: startDate,
-      end: endDate,
-      resource: item
-    };
-  });
+  const events: CalendarEvent[] = contentItems
+    .filter((item, index, self) => 
+      // Remove duplicates based on ID
+      index === self.findIndex(t => t.id === item.id)
+    )
+    .map(item => {
+      let startDate;
+      
+      // Use publicationDate as primary date source
+      if (item.publicationDate) {
+        startDate = new Date(item.publicationDate);
+      } else if (item.date) {
+        // Fallback to date field if publicationDate is not available
+        startDate = new Date(item.date);
+      } else {
+        // Last resort: use current date
+        startDate = new Date();
+      }
+      
+      // If we have startTime, update the hours/minutes
+      if (item.startTime) {
+        const startTime = new Date(item.startTime);
+        startDate.setHours(startTime.getHours());
+        startDate.setMinutes(startTime.getMinutes());
+      }
+      
+      // Calculate end date/time
+      let endDate;
+      if (item.endTime) {
+        endDate = new Date(item.endTime);
+      } else {
+        // For publication dates without explicit end time, make it a point-in-time event
+        endDate = new Date(startDate);
+      }
+      
+      return {
+        id: item.id,
+        title: item.title,
+        start: startDate,
+        end: endDate,
+        resource: item
+      };
+    });
 
   // Custom event styling
-  const eventPropGetter: EventPropGetter<CalendarEvent> = useCallback(() => {
+  const eventPropGetter: EventPropGetter<CalendarEvent> = useCallback((event: CalendarEvent) => {
+    // Use project color if available, otherwise fall back to theme primary color
+    let projectColor = event.resource.project?.color || theme.palette.primary.main;
+    
+    // Add # prefix if the color doesn't have it (for hex colors)
+    if (projectColor && !projectColor.startsWith('#') && projectColor.length === 6) {
+      projectColor = `#${projectColor}`;
+    }
+    
     return { 
       style: { 
-        backgroundColor: theme.palette.primary.main, 
-        color: theme.palette.primary.contrastText, 
+        backgroundColor: projectColor, 
+        color: 'white', // Use white text for better contrast with project colors
         borderRadius: '4px', 
-        border: 'none' 
+        border: 'none',
+        fontSize: '0.875rem',
+        fontWeight: '500'
       } 
     };
-  }, [theme.palette.primary.main, theme.palette.primary.contrastText]);
+  }, [theme.palette.primary.main]);
 
   // Custom day cell styling to highlight today's date
   const dayPropGetter: DayPropGetter = useCallback((date: Date) => {
@@ -151,29 +230,11 @@ const ContentCalendar: React.FC<ContentCalendarProps> = ({
     return {};
   }, []);
 
-  // Add custom styles for today's date highlight
+  // Custom highlight for today's date
   const todayHighlightStyles = `
-    .rbc-day-today .rbc-date-cell {
-      position: relative;
-    }
-    
-    .rbc-day-today .rbc-date-cell > a {
-      position: relative;
-      z-index: 2;
-      color: white;
-    }
-    
-    .rbc-day-today .rbc-date-cell > a::before {
-      content: "";
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 28px;
-      height: 28px;
-      background-color: ${theme.palette.primary.main};
-      border-radius: 50%;
-      z-index: -1;
+    .rbc-today {
+      background-color: rgba(33, 150, 243, 0.1);
+      font-weight: bold;
     }
   `;
 
@@ -201,15 +262,17 @@ const ContentCalendar: React.FC<ContentCalendarProps> = ({
     );
   }, []);
 
-  const handleSelectEvent = useCallback((calEvent: object) => {
+  const handleSelectEvent = useCallback((calEvent: object, e: React.SyntheticEvent) => {
     const event = calEvent as CalendarEvent;
     const contentItem = event.resource;
-    if (contentItem?.id && onSelectEvent) {
-      onSelectEvent(contentItem);
-    } else if (contentItem?.id) {
-      router.push(`/content/${contentItem.id}`);
+    
+    if (contentItem) {
+      // Set the anchor element for the popover
+      setModalAnchorEl(e.currentTarget as HTMLElement);
+      setSelectedContentItem(contentItem);
+      setContentModalOpen(true);
     }
-  }, [onSelectEvent, router]);
+  }, []);
 
   const handleNavigate = useCallback((action: NavigateAction) => {
     let newDate = new Date(date);
@@ -240,6 +303,13 @@ const ContentCalendar: React.FC<ContentCalendarProps> = ({
   const handleViewChange = useCallback((newView: View) => {
     setView(newView);
   }, []);
+
+  // Handle content modal actions
+  const handleContentModalClose = () => {
+    setContentModalOpen(false);
+    setSelectedContentItem(null);
+    setModalAnchorEl(null);
+  };
 
   // Handle slot selection (clicking on empty space in calendar)
   const handleSelectSlot = useCallback((slotInfo: SlotInfo) => {
@@ -285,15 +355,21 @@ const ContentCalendar: React.FC<ContentCalendarProps> = ({
   return (
     <Paper elevation={0} sx={{ 
       p: 2, 
-      height: 'calc(100vh - 150px)', 
+      height: 'calc(100vh - 130px)',
       backgroundColor: 'white',
       borderRadius: '8px',
-      position: 'relative', // For positioning the click effect
-      overflow: 'hidden'
+      position: 'relative',
+      overflow: 'auto',
+      '&::-webkit-scrollbar': {
+        display: 'none',
+      },
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
     }}>
-      {/* Add custom styles for click effect and today highlight */}
+      {/* Add custom styles */}
       <style>{clickEffectStyles}</style>
       <style>{todayHighlightStyles}</style>
+      <style>{calendarStyles}</style>
       
       {/* Custom Calendar Toolbar */}
       <Box sx={{ 
@@ -380,6 +456,17 @@ const ContentCalendar: React.FC<ContentCalendarProps> = ({
           open={createModalOpen}
           onClose={handleCreateModalClose}
           defaultPublicationDate={selectedSlot.start.toISOString()}
+        />
+      )}
+      
+      {/* Content Item Modal */}
+      {selectedContentItem && (
+        <ContentItemModal
+          open={contentModalOpen}
+          onClose={handleContentModalClose}
+          anchorEl={modalAnchorEl}
+          contentItem={selectedContentItem}
+          onDelete={refreshContentItems}
         />
       )}
       

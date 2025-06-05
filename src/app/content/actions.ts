@@ -1,15 +1,15 @@
 'use server';
 
-import { getAllContentItems, createContentItem, deleteContentItem, getContentItemById, updateContentItem, getAllProjects } from '@/lib/services/contentApi';
+import { getAllContentItems, createContentItem, deleteContentItem, getContentItemById, updateContentItem, getAllProjects, ContentFilters } from '@/lib/services/contentApi';
 import { ContentItem } from '@/lib/config/api';
 import { revalidatePath } from 'next/cache';
 
 /**
- * Server action to fetch all content items
+ * Server action to fetch all content items with optional filters
  */
-export async function fetchContentItems() {
+export async function fetchContentItems(filters?: ContentFilters) {
   try {
-    const contentItems = await getAllContentItems();
+    const contentItems = await getAllContentItems(filters);
     return { success: true, data: contentItems };
   } catch (error) {
     console.error('Action: Error fetching content items:', error);
@@ -27,7 +27,7 @@ export async function createNewContentItem(formData: ContentItem) {
   try {
     const newItem = await createContentItem(formData);
     // Revalidate the content page to show updated data
-    revalidatePath('/content');
+    revalidatePath('/');
     return { success: true, data: newItem };
   } catch (error) {
     console.error('Action: Error creating content item:', error);
@@ -45,7 +45,7 @@ export async function deleteContentItemById(id: number) {
   try {
     await deleteContentItem(id);
     // Revalidate the content page to show updated data
-    revalidatePath('/content');
+    revalidatePath('/');
     return { success: true };
   } catch (error) {
     console.error('Action: Error deleting content item:', error);
@@ -79,7 +79,7 @@ export async function updateContentItemById(id: number, formData: ContentItem) {
   try {
     const updatedItem = await updateContentItem(id, formData);
     // Revalidate the content page to show updated data
-    revalidatePath('/content');
+    revalidatePath('/');
     return { success: true, data: updatedItem };
   } catch (error) {
     console.error('Action: Error updating content item:', error);

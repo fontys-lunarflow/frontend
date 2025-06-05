@@ -24,7 +24,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PersonIcon from '@mui/icons-material/Person';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import TagIcon from '@mui/icons-material/Tag';
-import { getContentItem } from '../actions';
+import { getContentItem } from '@/app/content/actions';
 import { ContentItem } from '@/lib/config/api';
 
 interface PageProps {

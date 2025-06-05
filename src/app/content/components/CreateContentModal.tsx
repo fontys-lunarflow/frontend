@@ -17,22 +17,15 @@ import {
   FormControl,
   InputLabel,
   FormHelperText,
-  CircularProgress,
-  Tabs,
-  Tab,
-  Autocomplete,
-  Chip,
-  Grid
+  CircularProgress
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
-import TagIcon from '@mui/icons-material/Tag';
 import { ContentItem } from '@/lib/config/api';
-import { createNewContentItem, fetchProjects } from '../actions';
+import { createNewContentItem, fetchProjects } from '@/app/content/actions';
 
 interface CreateContentModalProps {
   open: boolean;
@@ -50,27 +43,31 @@ interface Project {
 
 // Enum options for dropdown fields
 const LIFECYCLE_STAGES = ['AWARENESS', 'CONSIDERATION', 'DECISION', 'IMPLEMENTATION', 'LOYALTY'];
-const STATUS_OPTIONS = ['BACKLOG', 'IN_PROGRESS', 'REVIEW', 'COMPLETED'];
+const STATUS_OPTIONS = ['BACKLOG', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'];
+
+// Define validation errors interface
+interface ValidationErrors {
+  title?: string;
+  projectId?: string;
+  personResponsibleId?: string;
+  publicationDate?: string;
+}
 
 const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, defaultPublicationDate }) => {
+  // Form fields - only the essential ones
   const [title, setTitle] = useState('');
-  const [subject, setSubject] = useState('');
-  const [topic, setTopic] = useState('');
   const [projectId, setProjectId] = useState<number | ''>('');
-  const [selectedTab, setSelectedTab] = useState(0);
-  
-  // New fields
   const [personResponsibleId, setPersonResponsibleId] = useState('');
   const [lifecycleStage, setLifecycleStage] = useState('AWARENESS');
   const [status, setStatus] = useState('BACKLOG');
-  const [personas, setPersonas] = useState<string[]>([]);
-  const [channels, setChannels] = useState<string[]>([]);
   const [publicationDate, setPublicationDate] = useState<Date | null>(defaultPublicationDate ? new Date(defaultPublicationDate) : null);
-  const [publicationTime, setPublicationTime] = useState<Date | null>(defaultPublicationDate ? new Date(defaultPublicationDate) : null);
   
+  // Form state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   
   // Projects state
   const [projects, setProjects] = useState<Project[]>([]);
@@ -83,6 +80,50 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
       loadProjects();
     }
   }, [open]);
+
+  // Mark field as touched when it's interacted with
+  const handleFieldTouch = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
+
+  // Validate a single field
+  const validateField = (field: string, value: string | number | Date | null): string | undefined => {
+    switch (field) {
+      case 'title':
+        return !value ? 'Title is required' : undefined;
+      case 'projectId':
+        return value === '' ? 'Project is required' : undefined;
+      case 'personResponsibleId':
+        return !value ? 'Person responsible is required' : undefined;
+      case 'publicationDate':
+        if (value) {
+          const dateValue = new Date(value);
+          const now = new Date();
+          return dateValue <= now ? 'Publication date must be in the future' : undefined;
+        }
+        return undefined;
+      default:
+        return undefined;
+    }
+  };
+
+  // Validate all fields
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {};
+    
+    errors.title = validateField('title', title);
+    errors.projectId = validateField('projectId', projectId);
+    errors.personResponsibleId = validateField('personResponsibleId', personResponsibleId);
+    
+    if (publicationDate) {
+      errors.publicationDate = validateField('publicationDate', publicationDate);
+    }
+    
+    setValidationErrors(errors);
+    
+    // Form is valid if there are no errors
+    return !Object.values(errors).some(error => error !== undefined);
+  };
 
   const loadProjects = async () => {
     try {
@@ -110,22 +151,23 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
     }
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setSelectedTab(newValue);
-  };
-
   const handleSubmit = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
       
-      // Validate required fields
-      if (!title || !subject || !topic || !projectId) {
-        setError('Please fill all required fields');
+      // Additional frontend validation for publication date
+      if (publicationDate && publicationDate <= new Date()) {
+        setValidationErrors(prev => ({ ...prev, publicationDate: 'Publication date must be in the future' }));
+        setError('Publication date must be in the future. Please select a date and time after now.');
         setLoading(false);
         return;
       }
-
+      
       // Ensure the projectId is a valid number
       const numericProjectId = Number(projectId);
       if (isNaN(numericProjectId)) {
@@ -134,28 +176,29 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
         return;
       }
 
-      // Combine date and time for publication
-      let finalPublicationDate = publicationDate;
-      
-      if (finalPublicationDate && publicationTime) {
-        // Create a new date object with the date from publicationDate and time from publicationTime
-        finalPublicationDate = new Date(finalPublicationDate);
-        finalPublicationDate.setHours(publicationTime.getHours());
-        finalPublicationDate.setMinutes(publicationTime.getMinutes());
+      // Find the selected project to include project details
+      const selectedProject = projects.find(p => p.id === numericProjectId);
+      if (!selectedProject) {
+        setError('Selected project not found');
+        setLoading(false);
+        return;
       }
 
+      // Format the content item to match the simple structure you specified
       const contentItem: ContentItem = {
         title,
-        subject,
-        topic,
-        projectId: numericProjectId,
-        // New fields
-        personResponsibleId: personResponsibleId || undefined,
-        lifecycleStage,
+        project: {
+          id: selectedProject.id,
+          name: selectedProject.name,
+          color: selectedProject.color
+        },
+        personResponsibleId,
+        contentTypeIds: [], // Empty for now, can be added later if needed
+        personaIds: [], // Empty for now, can be added later if needed  
+        labelIds: [], // Empty for now, can be added later if needed
         status,
-        personas,
-        channels,
-        publicationDate: finalPublicationDate?.toISOString()
+        lifecycleStage,
+        publicationDate: publicationDate?.toISOString()
       };
 
       console.log('Submitting content item via server action:', contentItem);
@@ -168,17 +211,13 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
         
         // Reset form
         setTitle('');
-        setSubject('');
-        setTopic('');
         setProjectId('');
         setPersonResponsibleId('');
         setLifecycleStage('AWARENESS');
         setStatus('BACKLOG');
-        setPersonas([]);
-        setChannels([]);
         setPublicationDate(null);
-        setPublicationTime(null);
-        setSelectedTab(0);
+        setValidationErrors({});
+        setTouched({});
         
         // Close modal after a short delay
         setTimeout(() => {
@@ -190,7 +229,15 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
       }
     } catch (err) {
       console.error('Error creating content item:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create content item');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create content item';
+      
+      // Check for specific error messages
+      if (errorMessage.toLowerCase().includes('past')) {
+        setValidationErrors(prev => ({ ...prev, publicationDate: 'Publication date cannot be in the past' }));
+        setError('Publication date cannot be in the past');
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -198,24 +245,15 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
 
   const handleClose = () => {
     setTitle('');
-    setSubject('');
-    setTopic('');
     setProjectId('');
     setPersonResponsibleId('');
     setLifecycleStage('AWARENESS');
     setStatus('BACKLOG');
-    setPersonas([]);
-    setChannels([]);
     setPublicationDate(null);
-    setPublicationTime(null);
-    setSelectedTab(0);
     setError(null);
+    setValidationErrors({});
+    setTouched({});
     onClose();
-  };
-
-  // Generate a unique key for each persona/channel
-  const getUniqueKey = (prefix: string, item: string, index: number) => {
-    return `${prefix}-${item}-${index}`;
   };
 
   return (
@@ -224,7 +262,7 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
         open={open}
         onClose={handleClose}
         fullWidth
-        maxWidth="md"
+        maxWidth="sm"
         sx={{
           '& .MuiDialog-paper': {
             borderRadius: '12px',
@@ -245,8 +283,14 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
               placeholder="Content Item Title"
               variant="standard"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                handleFieldTouch('title');
+              }}
+              onBlur={() => handleFieldTouch('title')}
               required
+              error={touched.title && !!validationErrors.title}
+              helperText={touched.title && validationErrors.title}
               sx={{ 
                 '& .MuiInputBase-input': { 
                   fontSize: '1.5rem',
@@ -256,7 +300,7 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
                   }
                 },
                 '& .MuiInput-underline:before': { 
-                  borderBottomColor: 'transparent' 
+                  borderBottomColor: touched.title && validationErrors.title ? 'error.main' : 'transparent' 
                 },
               }} 
             />
@@ -275,233 +319,161 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
             </Alert>
           )}
           
-          <Tabs value={selectedTab} onChange={handleTabChange} sx={{ mb: 3 }}>
-            <Tab label="Basic Info" />
-            <Tab label="Additional Info" />
-          </Tabs>
-          
-          {selectedTab === 0 && (
-            <Stack spacing={3}>
-              <TextField
-                label="Subject"
-                fullWidth
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                required
-              />
+          <Stack spacing={3}>
+            <FormControl 
+              fullWidth 
+              required 
+              error={!!projectsError || (touched.projectId && !!validationErrors.projectId)}
+            >
+              <InputLabel id="project-select-label">Project</InputLabel>
+              <Select
+                labelId="project-select-label"
+                id="project-select"
+                value={projectId}
+                label="Project"
+                onChange={(e) => {
+                  const value = e.target.value;
+                  console.log("Selected project value:", value);
+                  setProjectId(value as number);
+                  handleFieldTouch('projectId');
+                }}
+                onBlur={() => handleFieldTouch('projectId')}
+                disabled={projectsLoading}
+                startAdornment={
+                  projectsLoading ? (
+                    <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                  ) : null
+                }
+              >
+                {projects.map((project) => (
+                  <MenuItem key={project.id} value={project.id}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      {project.color && (
+                        <Box
+                          sx={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: '50%',
+                            bgcolor: project.color.startsWith('#') ? project.color : `#${project.color}`,
+                            mr: 1
+                          }}
+                        />
+                      )}
+                      {project.name}
+                    </Box>
+                  </MenuItem>
+                ))}
+                {projects.length === 0 && !projectsLoading && (
+                  <MenuItem disabled value="">
+                    No projects available
+                  </MenuItem>
+                )}
+              </Select>
+              {projectsError && <FormHelperText>{projectsError}</FormHelperText>}
+              {touched.projectId && validationErrors.projectId && <FormHelperText>{validationErrors.projectId}</FormHelperText>}
+            </FormControl>
+
+            <TextField
+              label="Person Responsible"
+              fullWidth
+              value={personResponsibleId}
+              onChange={(e) => {
+                setPersonResponsibleId(e.target.value);
+                handleFieldTouch('personResponsibleId');
+              }}
+              onBlur={() => handleFieldTouch('personResponsibleId')}
+              required
+              error={touched.personResponsibleId && !!validationErrors.personResponsibleId}
+              helperText={touched.personResponsibleId && validationErrors.personResponsibleId}
+              InputProps={{
+                startAdornment: <PersonIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />,
+              }}
+            />
+
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
+              <FormControl fullWidth>
+                <InputLabel id="status-select-label">Status</InputLabel>
+                <Select
+                  labelId="status-select-label"
+                  value={status}
+                  label="Status"
+                  onChange={(e) => setStatus(e.target.value)}
+                >
+                  {STATUS_OPTIONS.map(statusOption => (
+                    <MenuItem key={statusOption} value={statusOption}>{statusOption}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
               
-              <TextField
-                label="Topic"
-                fullWidth
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                required
-              />
-              
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
-                <FormControl fullWidth required error={!!projectsError}>
-                  <InputLabel id="project-select-label">Project</InputLabel>
-                  <Select
-                    labelId="project-select-label"
-                    id="project-select"
-                    value={projectId}
-                    label="Project"
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      console.log("Selected project value:", value);
-                      setProjectId(value as number);
-                    }}
-                    disabled={projectsLoading}
-                    startAdornment={
-                      projectsLoading ? (
-                        <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                      ) : null
+              <FormControl fullWidth>
+                <InputLabel id="lifecycle-select-label">Lifecycle Stage</InputLabel>
+                <Select
+                  labelId="lifecycle-select-label"
+                  value={lifecycleStage}
+                  label="Lifecycle Stage"
+                  onChange={(e) => setLifecycleStage(e.target.value)}
+                >
+                  {LIFECYCLE_STAGES.map(stage => (
+                    <MenuItem key={stage} value={stage}>{stage}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DateTimePicker
+                label="Publication Date & Time"
+                value={publicationDate}
+                onChange={(date) => {
+                  setPublicationDate(date);
+                  handleFieldTouch('publicationDate');
+                  // Clear the error when a new date is selected
+                  if (validationErrors.publicationDate && date) {
+                    const now = new Date();
+                    if (date > now) {
+                      setValidationErrors(prev => ({ ...prev, publicationDate: undefined }));
                     }
-                  >
-                    {projects.map((project) => (
-                      <MenuItem key={project.id} value={project.id}>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          {project.color && (
-                            <Box
-                              sx={{
-                                width: 16,
-                                height: 16,
-                                borderRadius: '50%',
-                                bgcolor: project.color,
-                                mr: 1
-                              }}
-                            />
-                          )}
-                          {project.name}
-                        </Box>
-                      </MenuItem>
-                    ))}
-                    {projects.length === 0 && !projectsLoading && (
-                      <MenuItem disabled value="">
-                        No projects available
-                      </MenuItem>
-                    )}
-                  </Select>
-                  {projectsError && <FormHelperText>{projectsError}</FormHelperText>}
-                </FormControl>
-
-                <TextField
-                  label="Person Responsible"
-                  fullWidth
-                  value={personResponsibleId}
-                  onChange={(e) => setPersonResponsibleId(e.target.value)}
-                  InputProps={{
-                    startAdornment: <PersonIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />,
-                  }}
-                />
-              </Box>
-
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
-                <FormControl fullWidth>
-                  <InputLabel id="status-select-label">Status</InputLabel>
-                  <Select
-                    labelId="status-select-label"
-                    value={status}
-                    label="Status"
-                    onChange={(e) => setStatus(e.target.value)}
-                  >
-                    {STATUS_OPTIONS.map(statusOption => (
-                      <MenuItem key={statusOption} value={statusOption}>{statusOption}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                
-                <FormControl fullWidth>
-                  <InputLabel id="lifecycle-select-label">Lifecycle Stage</InputLabel>
-                  <Select
-                    labelId="lifecycle-select-label"
-                    value={lifecycleStage}
-                    label="Lifecycle Stage"
-                    onChange={(e) => setLifecycleStage(e.target.value)}
-                  >
-                    {LIFECYCLE_STAGES.map(stage => (
-                      <MenuItem key={stage} value={stage}>{stage}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-            </Stack>
-          )}
-
-          {selectedTab === 1 && (
-            <Stack spacing={3}>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={7}>
-                    <DatePicker
-                      label="Publication Date"
-                      value={publicationDate}
-                      onChange={(date) => setPublicationDate(date)}
-                      slotProps={{
-                        textField: { 
-                          fullWidth: true, 
-                          helperText: 'When this content will be published'
-                        }
-                      }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={5}>
-                    <TimePicker
-                      label="Publication Time"
-                      value={publicationTime}
-                      onChange={(time) => setPublicationTime(time)}
-                      slotProps={{
-                        textField: { 
-                          fullWidth: true, 
-                          helperText: 'Time of publication'
-                        }
-                      }}
-                    />
-                  </Grid>
-                </Grid>
-              </LocalizationProvider>
-
-              <Autocomplete
-                multiple
-                options={[]}
-                freeSolo
-                value={personas}
-                onChange={(_, newValue) => setPersonas(newValue)}
-                renderTags={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <Chip
-                      {...getTagProps({ index })}
-                      key={getUniqueKey('persona', option, index)}
-                      label={option}
-                      icon={<PersonIcon />}
-                    />
-                  ))
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Personas"
-                    placeholder="Add personas"
-                    fullWidth
-                  />
-                )}
+                  }
+                }}
+                minDateTime={new Date()} // Prevent selecting past dates/times
+                slotProps={{
+                  textField: { 
+                    fullWidth: true, 
+                    helperText: validationErrors.publicationDate || 'Publication date must be in the future (when this content will be published)',
+                    error: touched.publicationDate && !!validationErrors.publicationDate
+                  }
+                }}
               />
-
-              <Autocomplete
-                multiple
-                options={[]}
-                freeSolo
-                value={channels}
-                onChange={(_, newValue) => setChannels(newValue)}
-                renderTags={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <Chip
-                      {...getTagProps({ index })}
-                      key={getUniqueKey('channel', option, index)}
-                      label={option}
-                      icon={<TagIcon />}
-                      variant="outlined"
-                    />
-                  ))
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Channels"
-                    placeholder="Add channels"
-                    fullWidth
-                  />
-                )}
-              />
-            </Stack>
-          )}
+            </LocalizationProvider>
+          </Stack>
         </DialogContent>
 
-        <Divider />
-
-        <DialogActions sx={{ p: 2, justifyContent: 'flex-end' }}>
-          <Button onClick={handleClose} variant="outlined">Cancel</Button>
-          <Button
-            variant="contained"
+        <DialogActions sx={{ p: 3, pt: 1 }}>
+          <Button onClick={handleClose} color="primary">
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSubmit} 
+            variant="contained" 
             color="primary"
-            onClick={handleSubmit}
-            disabled={loading || projectsLoading}
-            sx={{ 
-              borderRadius: '20px',
-              px: 3
-            }}
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : undefined}
           >
             {loading ? 'Creating...' : 'Create'}
           </Button>
         </DialogActions>
       </Dialog>
-      
+
       <Snackbar
         open={success}
         autoHideDuration={3000}
         onClose={() => setSuccess(false)}
-        message="Content item created successfully"
-      />
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setSuccess(false)} severity="success" sx={{ width: '100%' }}>
+          Content item created successfully!
+        </Alert>
+      </Snackbar>
     </>
   );
 };
