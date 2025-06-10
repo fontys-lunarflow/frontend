@@ -49,12 +49,12 @@ const calendarStyles = `
   
   .rbc-month-view {
     border-radius: 8px;
-    border: 1px solid #e0e0e0;
+    border: none;
   }
   
   .rbc-time-view {
     border-radius: 8px;
-    border: 1px solid #e0e0e0;
+    border: none;
   }
   
   .rbc-day-bg {
@@ -77,6 +77,26 @@ const calendarStyles = `
   
   .rbc-off-range-bg {
     background-color: #f9f9f9;
+  }
+  
+  /* Custom time label styling for week/day views */
+  .rbc-time-slot .rbc-label {
+    color: #888 !important;
+    font-weight: 400 !important;
+  }
+  
+  .rbc-timeslot-group .rbc-label {
+    color: #888 !important;
+    font-weight: 400 !important;
+  }
+  
+  .rbc-time-gutter .rbc-timeslot-group {
+    color: #888 !important;
+  }
+  
+  /* Hide the minutes part and show only hours */
+  .rbc-time-slot .rbc-label::after {
+    content: '';
   }
 `;
 
@@ -448,6 +468,17 @@ const ContentCalendar: React.FC<ContentCalendarProps> = ({
         selectable={true}
         onSelectSlot={handleSelectSlot}
         popup
+        formats={{
+          timeGutterFormat: (date: Date) => {
+            const hour = date.getHours();
+            if (hour === 0) return '12 AM';
+            if (hour < 12) return `${hour} AM`;
+            if (hour === 12) return '12 PM';
+            return `${hour - 12} PM`;
+          },
+          dayFormat: 'ddd M/D',
+          dayHeaderFormat: 'dddd MMM D',
+        }}
       />
 
       {/* Create Content Modal */}

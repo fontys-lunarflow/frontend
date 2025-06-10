@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, CircularProgress } from '@mui/material';
+import { Box, CircularProgress, Fab } from '@mui/material';
 import { motion } from 'framer-motion';
 import M3Typography from '@/components/M3Typography';
+import AddIcon from '@mui/icons-material/Add';
 import { View } from 'react-big-calendar';
 
 // Global layout components
@@ -14,6 +15,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import ContentList from './components/ContentList';
 import ContentCalendar from './components/ContentCalendar';
 import SidebarContent from './components/SidebarContent';
+import CreateContentModal from './components/CreateContentModal';
 
 // Utilities
 import { ContentItem } from '@/lib/config/api';
@@ -37,6 +39,7 @@ export default function ContentListPage() {
   const [calendarView, setCalendarView] = useState<View>('month');
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [filters, setFilters] = useState<ContentFilters>({});
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   
   // State for content items from API
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
@@ -89,6 +92,15 @@ export default function ContentListPage() {
     if (newViewMode !== null) {
       setViewMode(newViewMode);
     }
+  };
+
+  const handleOpenCreateModal = () => {
+    setCreateModalOpen(true);
+  };
+
+  const handleCloseCreateModal = () => {
+    setCreateModalOpen(false);
+    getContentItems(filters); // Refresh content items after creating a new one
   };
 
   return (
@@ -217,6 +229,49 @@ export default function ContentListPage() {
             />
           )}
         </Box>
+        
+        {/* Floating Action Button (FAB) - Updated to M3 style */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.3 }}
+          style={{
+            position: 'fixed',
+            bottom: '32px',
+            right: '32px',
+            zIndex: 1200,
+          }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Fab 
+            color="primary"
+            variant="extended"
+            aria-label="add content"
+            onClick={handleOpenCreateModal}
+            sx={{
+              boxShadow: '0 3px 5px -1px rgba(0,0,0,.2), 0 6px 10px 0 rgba(0,0,0,.14), 0 1px 18px 0 rgba(0,0,0,.12)',
+              borderRadius: '16px',
+              paddingLeft: '16px',
+              paddingRight: '20px',
+              height: '48px',
+              gap: '8px',
+              textTransform: 'none',
+              fontWeight: 500,
+              // Remove default position styling since motion.div handles it
+              position: 'static',
+            }}
+          >
+            <AddIcon sx={{ mr: 1 }} />
+            Add item
+          </Fab>
+        </motion.div>
+        
+        {/* Create Content Modal */}
+        <CreateContentModal
+          open={createModalOpen}
+          onClose={handleCloseCreateModal}
+        />
       </Box>
     </Box>
   );
