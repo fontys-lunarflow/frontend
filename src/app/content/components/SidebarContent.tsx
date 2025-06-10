@@ -419,7 +419,23 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
                             onChange={() => handleProjectSelect(project.id)}
                           />
                         }
-                        label={<Typography variant="body2">{project.name}</Typography>}
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box
+                              sx={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: '50%',
+                                backgroundColor: project.color ? 
+                                  (project.color.startsWith('#') ? project.color : `#${project.color}`) : 
+                                  '#1976d2',
+                                border: '1px solid rgba(0, 0, 0, 0.1)',
+                                flexShrink: 0
+                              }}
+                            />
+                            <Typography variant="body2">{project.name}</Typography>
+                          </Box>
+                        }
                         sx={{ 
                           display: 'flex',
                           alignItems: 'center',

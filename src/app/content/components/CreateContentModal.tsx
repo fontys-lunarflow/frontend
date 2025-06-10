@@ -275,13 +275,13 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
           justifyContent: 'space-between', 
           alignItems: 'center',
           p: 3,
-          pb: 1
+          pb: 2
         }}>
           <Box sx={{ width: '100%' }}>
             <TextField 
               fullWidth 
-              placeholder="Content Item Title"
-              variant="standard"
+              placeholder="Enter content item title..."
+              variant="outlined"
               value={title}
               onChange={(e) => {
                 setTitle(e.target.value);
@@ -293,19 +293,18 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
               helperText={touched.title && validationErrors.title}
               sx={{ 
                 '& .MuiInputBase-input': { 
-                  fontSize: '1.5rem',
+                  fontSize: '1.3rem',
                   fontWeight: 500,
                   '&::placeholder': {
-                    opacity: 0.5,
+                    opacity: 0.7,
+                    color: 'text.secondary',
+                    fontWeight: 400,
                   }
-                },
-                '& .MuiInput-underline:before': { 
-                  borderBottomColor: touched.title && validationErrors.title ? 'error.main' : 'transparent' 
-                },
+                }
               }} 
             />
           </Box>
-          <IconButton onClick={handleClose} sx={{ ml: 1 }}>
+          <IconButton onClick={handleClose} sx={{ ml: 2 }}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
