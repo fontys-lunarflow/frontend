@@ -9,6 +9,17 @@ export interface Label {
   color: string;
 }
 
+// Ticket interface from ticket API documentation
+export interface Ticket {
+  id: number;
+  title: string;
+  desc?: string;
+  dueDate?: string;
+  url?: string;
+  labels?: string[];
+  assignees?: string[];
+}
+
 /**
  * Response wrapper from ticket API
  */

@@ -19,6 +19,19 @@ export interface Label {
   color: string;
 }
 
+/*
+ * Ticket interface for ticket API integration
+ */
+export interface Ticket {
+  id: number;
+  title: string;
+  desc?: string;
+  dueDate?: string;
+  url?: string;
+  labels?: string[];
+  assignees?: string[];
+}
+
 /**
  * Content item interface for API responses and requests
  */
