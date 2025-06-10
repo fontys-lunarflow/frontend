@@ -43,9 +43,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${roboto.variable} ${robotoCondensed.variable}`}>
-      <body
-        // className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body>
+        {/* className={`${geistSans.variable} ${geistMono.variable} antialiased`} */}
         <SessionProvider>
         <ThemeProvider>
           {children}
