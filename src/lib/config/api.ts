@@ -3,8 +3,8 @@
  */
 
 // Base URL for API requests - defaults to Docker container name, but can be overridden by environment variable
-export const API_BASE_URL = process.env.API_BASE_URL || 'http://content_api:8080';
-export const TICKET_API_BASE_URL = process.env.TICKET_API_BASE_URL || 'http://ticket_api:8080';
+export const API_BASE_URL = process.env.API_BASE_URL || 'http://content-service:8080';
+export const TICKET_API_BASE_URL = process.env.TICKET_API_BASE_URL || 'http://ticket-api:8080';
 
 // Client-side API URLs (for browser requests) - these should use localhost
 export const CLIENT_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
