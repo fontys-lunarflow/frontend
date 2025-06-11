@@ -1,7 +1,8 @@
 const config = {
-  plugins: [
-    // "@tailwindcss/postcss", // Temporarily disabled due to ARM64 module issue
-  ],
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
 };
 
 export default config;
