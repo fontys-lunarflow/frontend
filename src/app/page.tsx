@@ -1,51 +1,53 @@
-'use client';
-
-import { Box, Typography, Button } from '@mui/material';
-import { useRouter } from 'next/navigation';
-
 export default function HomePage() {
-  const router = useRouter();
-
   return (
-    <Box 
-      sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        height: '100vh',
-        flexDirection: 'column',
-        gap: 3,
-        backgroundColor: '#f5f5f5'
-      }}
-    >
-      <Typography variant="h2" component="h1" color="primary">
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '100vh',
+      flexDirection: 'column',
+      fontFamily: 'Arial, sans-serif',
+      backgroundColor: '#f5f5f5'
+    }}>
+      <h1 style={{ color: '#333', marginBottom: '20px' }}>
         🚀 LunarFlow
-      </Typography>
+      </h1>
       
-      <Typography variant="h5" color="text.secondary" sx={{ textAlign: 'center', maxWidth: 600 }}>
+      <h2 style={{ color: '#666', marginBottom: '20px' }}>
         Content Management Platform
-      </Typography>
+      </h2>
       
-      <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', maxWidth: 600 }}>
-        Your application is running successfully in Kubernetes with Material-UI theming!
-      </Typography>
+      <p style={{ color: '#666', textAlign: 'center', maxWidth: '600px' }}>
+        Your application is running successfully in Kubernetes!
+      </p>
       
-      <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-        <Button 
-          variant="contained" 
-          size="large"
-          onClick={() => router.push('/content')}
+      <div style={{ marginTop: '30px' }}>
+        <button 
+          style={{
+            backgroundColor: '#0070f3',
+            color: 'white',
+            border: 'none',
+            padding: '12px 24px',
+            borderRadius: '6px',
+            marginRight: '10px',
+            cursor: 'pointer'
+          }}
         >
           View Content
-        </Button>
-        <Button 
-          variant="outlined" 
-          size="large"
-          onClick={() => router.push('/content/create')}
+        </button>
+        <button 
+          style={{
+            backgroundColor: 'transparent',
+            color: '#0070f3',
+            border: '1px solid #0070f3',
+            padding: '12px 24px',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
         >
           Create Content
-        </Button>
-      </Box>
-    </Box>
+        </button>
+      </div>
+    </div>
   );
 }
