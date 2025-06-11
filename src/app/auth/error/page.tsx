@@ -1,6 +1,7 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 import { 
   Box, 
   Card, 
@@ -8,11 +9,12 @@ import {
   Typography, 
   Button, 
   Container,
-  Alert 
+  Alert,
+  CircularProgress
 } from "@mui/material"
 import Link from "next/link"
 
-export default function AuthError() {
+function AuthErrorContent() {
   const searchParams = useSearchParams()
   const error = searchParams.get("error")
 
@@ -65,5 +67,24 @@ export default function AuthError() {
         </Card>
       </Box>
     </Container>
+  )
+}
+
+export default function AuthError() {
+  return (
+    <Suspense fallback={
+      <Container maxWidth="sm">
+        <Box 
+          display="flex" 
+          justifyContent="center" 
+          alignItems="center" 
+          minHeight="100vh"
+        >
+          <CircularProgress />
+        </Box>
+      </Container>
+    }>
+      <AuthErrorContent />
+    </Suspense>
   )
 } 
