@@ -1,28 +1,18 @@
-'use client';
-
-import { Box, Typography } from '@mui/material';
-
 export default function HomePage() {
   return (
-    <Box 
-      sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        height: '100vh',
-        flexDirection: 'column',
-        gap: 2
-      }}
-    >
-      <Typography variant="h2" component="h1">
-        🚀 LunarFlow
-      </Typography>
-      <Typography variant="h6" color="text.secondary">
-        Application is running successfully!
-      </Typography>
-      <Typography variant="body1" color="text.secondary">
-        Frontend is working in Kubernetes
-      </Typography>
-    </Box>
+    <div style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      height: '100vh',
+      flexDirection: 'column',
+      gap: '20px',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      <h1>🚀 LunarFlow</h1>
+      <h2>Application is running successfully!</h2>
+      <p>Frontend is working in Kubernetes</p>
+      <p>No external imports - pure HTML/CSS</p>
+    </div>
   );
 }
