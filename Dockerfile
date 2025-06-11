@@ -7,9 +7,11 @@ COPY . .
 
 # Install dependencies
 RUN npm install
+RUN npm run build
 
 # Expose port
 EXPOSE 3000
+ENV NODE_ENV=production
 
-# Start in development mode (no build required)
-CMD ["npm", "run", "dev"]
+# Start in production mode
+CMD ["npm", "start"]
