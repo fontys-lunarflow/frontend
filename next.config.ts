@@ -9,8 +9,6 @@ const nextConfig: NextConfig = {
     // Ignore TypeScript errors during builds
     ignoreBuildErrors: true,
   },
-  // Enable standalone output for production Docker
-  output: 'standalone',
   // Disable telemetry to speed up
   telemetry: false,
   /* config options here */
