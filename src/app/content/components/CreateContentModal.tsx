@@ -42,7 +42,7 @@ interface Topic {
 }
 
 // Enum options for dropdown fields
-const LIFECYCLE_STAGES = ['AWARENESS', 'CONSIDERATION', 'DECISION', 'IMPLEMENTATION', 'LOYALTY'];
+const LIFECYCLE_STAGES = ['AWARENESS', 'CONSIDERATION', 'DECISION', 'RETENTION', 'ADVOCACY'];
 const STATUS_OPTIONS = ['BACKLOG', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'];
 
 // Define validation errors interface

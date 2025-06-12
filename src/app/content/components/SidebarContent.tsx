@@ -699,6 +699,26 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
                   }
                   label={<Typography variant="body2">Decision</Typography>}
                 />
+                <FormControlLabel
+                  control={
+                    <Checkbox 
+                      size="small"
+                      checked={selectedLifecycleStages.includes('RETENTION')}
+                      onChange={() => handleLifecycleStageSelect('RETENTION')}
+                    />
+                  }
+                  label={<Typography variant="body2">Retention</Typography>}
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox 
+                      size="small"
+                      checked={selectedLifecycleStages.includes('ADVOCACY')}
+                      onChange={() => handleLifecycleStageSelect('ADVOCACY')}
+                    />
+                  }
+                  label={<Typography variant="body2">Advocacy</Typography>}
+                />
               </FormGroup>
             </Box>
             

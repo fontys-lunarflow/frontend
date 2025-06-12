@@ -41,7 +41,7 @@ import { getContentItem, updateContentItemById, deleteContentItemById, fetchProj
 import { fetchLabels, Label } from '@/lib/services/ticketApi';
 
 // Enum options for dropdown fields
-const LIFECYCLE_STAGES = ['AWARENESS', 'CONSIDERATION', 'DECISION', 'IMPLEMENTATION', 'LOYALTY'];
+const LIFECYCLE_STAGES = ['AWARENESS', 'CONSIDERATION', 'DECISION', 'RETENTION', 'ADVOCACY'];
 const STATUS_OPTIONS = ['BACKLOG', 'IN_PROGRESS', 'REVIEW', 'COMPLETED'];
 
 // Interface for the form data - updated to use labels instead of personas/channels
