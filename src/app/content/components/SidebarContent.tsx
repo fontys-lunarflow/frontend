@@ -55,8 +55,8 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
   // State for filters section
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [projectsExpanded, setProjectsExpanded] = useState(true);
-  const [selectedProjects, setSelectedProjects] = useState<number[]>([]);
+  const [topicsExpanded, setTopicsExpanded] = useState(true);
+  const [selectedTopics, setSelectedTopics] = useState<number[]>([]);
   const [selectedPerson, setSelectedPerson] = useState('');
   const [selectedContentTypes, setSelectedContentTypes] = useState<number[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
@@ -64,40 +64,40 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
   const [publishDateEnd, setPublishDateEnd] = useState<Date | null>(null);
   const [selectedLifecycleStages, setSelectedLifecycleStages] = useState<string[]>([]);
   
-  // State for projects and content types from API
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [projectsLoading, setProjectsLoading] = useState(true);
+  // State for topics and content types from API
+  const [topics, setTopics] = useState<Project[]>([]);
+  const [topicsLoading, setTopicsLoading] = useState(true);
   const [contentTypes, setContentTypes] = useState<ContentType[]>([]);
   const [contentTypesLoading, setContentTypesLoading] = useState(true);
 
-  // Fetch projects and content types on component mount
+  // Fetch topics and content types on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log('🚀 SidebarContent: Starting to fetch projects and content types...');
-        setProjectsLoading(true);
+        console.log('🚀 SidebarContent: Starting to fetch topics and content types...');
+        setTopicsLoading(true);
         setContentTypesLoading(true);
         
         console.log('🔍 SidebarContent: Calling getAllProjects and getAllContentTypes...');
-        const [projectList, contentTypeList] = await Promise.all([
+        const [topicList, contentTypeList] = await Promise.all([
           getAllProjects(),
           getAllContentTypes()
         ]);
         
-        console.log('✅ SidebarContent: Received projects:', projectList);
+        console.log('✅ SidebarContent: Received topics:', topicList);
         console.log('✅ SidebarContent: Received content types:', contentTypeList);
         
-        setProjects(projectList);
+        setTopics(topicList);
         setContentTypes(contentTypeList);
       } catch (error) {
-        console.error('❌ SidebarContent: Failed to fetch projects and content types:', error);
+        console.error('❌ SidebarContent: Failed to fetch topics and content types:', error);
         console.error('❌ SidebarContent: Error details:', {
           name: (error as Error)?.name,
           message: (error as Error)?.message,
           stack: (error as Error)?.stack
         });
       } finally {
-        setProjectsLoading(false);
+        setTopicsLoading(false);
         setContentTypesLoading(false);
       }
     };
@@ -107,7 +107,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
 
   // Helper function to build and send filters
   const buildAndSendFilters = (
-    projects = selectedProjects,
+    topics = selectedTopics,
     contentTypes = selectedContentTypes,
     statuses = selectedStatuses,
     lifecycleStages = selectedLifecycleStages,
@@ -117,7 +117,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
     if (onFiltersChange) {
       const filters: ContentFilters = {};
       
-      if (projects.length > 0) filters.projectIds = projects;
+      if (topics.length > 0) filters.projectIds = topics;
       if (contentTypes.length > 0) filters.contentTypeIds = contentTypes;
       if (statuses.length > 0) filters.statuses = statuses;
       if (lifecycleStages.length > 0) filters.lifecycleStages = lifecycleStages;
@@ -132,16 +132,16 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
     setFiltersOpen(!filtersOpen);
   };
 
-  const handleProjectsToggle = () => {
-    setProjectsExpanded(!projectsExpanded);
+  const handleTopicsToggle = () => {
+    setTopicsExpanded(!topicsExpanded);
   };
 
-  const handleProjectSelect = (projectId: number) => {
-    const newProjects = selectedProjects.includes(projectId) 
-      ? selectedProjects.filter(id => id !== projectId) 
-      : [...selectedProjects, projectId];
-    setSelectedProjects(newProjects);
-    buildAndSendFilters(newProjects);
+  const handleTopicSelect = (topicId: number) => {
+    const newTopics = selectedTopics.includes(topicId) 
+      ? selectedTopics.filter(id => id !== topicId) 
+      : [...selectedTopics, topicId];
+    setSelectedTopics(newTopics);
+    buildAndSendFilters(newTopics);
   };
 
   const handleContentTypeSelect = (typeId: number) => {
@@ -180,7 +180,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
 
   const clearAllFilters = () => {
     setSearchQuery('');
-    setSelectedProjects([]);
+    setSelectedTopics([]);
     setSelectedPerson('');
     setSelectedContentTypes([]);
     setSelectedStatuses([]);
@@ -393,30 +393,30 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
               />
             </Box>
             
-            {/* Projects */}
+            {/* Topics */}
             <Box>
               <FormControlLabel
                 control={
                   <Checkbox 
-                    checked={selectedProjects.length > 0 || projectsExpanded} 
-                    onChange={handleProjectsToggle}
+                    checked={selectedTopics.length > 0 || topicsExpanded} 
+                    onChange={handleTopicsToggle}
                   />
                 }
-                label={<Typography variant="body2">Projects</Typography>}
+                label={<Typography variant="body2">Topics</Typography>}
               />
-              <Collapse in={projectsExpanded}>
+              <Collapse in={topicsExpanded}>
                 <Box sx={{ ml: 2, mt: 0.5 }}>
-                  {projectsLoading ? (
-                    <Typography variant="body2" sx={{ ml: 2 }}>Loading projects...</Typography>
+                  {topicsLoading ? (
+                    <Typography variant="body2" sx={{ ml: 2 }}>Loading topics...</Typography>
                   ) : (
-                    projects.map(project => (
+                    topics.map(topic => (
                       <FormControlLabel
-                        key={project.id}
+                        key={topic.id}
                         control={
                           <Checkbox 
                             size="small"
-                            checked={selectedProjects.includes(project.id)}
-                            onChange={() => handleProjectSelect(project.id)}
+                            checked={selectedTopics.includes(topic.id)}
+                            onChange={() => handleTopicSelect(topic.id)}
                           />
                         }
                         label={
@@ -426,14 +426,14 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
                                 width: 12,
                                 height: 12,
                                 borderRadius: '50%',
-                                backgroundColor: project.color ? 
-                                  (project.color.startsWith('#') ? project.color : `#${project.color}`) : 
+                                backgroundColor: topic.color ? 
+                                  (topic.color.startsWith('#') ? topic.color : `#${topic.color}`) : 
                                   '#1976d2',
                                 border: '1px solid rgba(0, 0, 0, 0.1)',
                                 flexShrink: 0
                               }}
                             />
-                            <Typography variant="body2">{project.name}</Typography>
+                            <Typography variant="body2">{topic.name}</Typography>
                           </Box>
                         }
                         sx={{ 

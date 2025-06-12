@@ -244,28 +244,28 @@ export default function ContentDetailPage({ params }: PageProps) {
 
           {/* Main Content Card */}
           <Paper elevation={1} sx={{ borderRadius: '12px', overflow: 'hidden', mb: 3 }}>
-            {/* Project Section */}
+            {/* Topic Section */}
             <Box sx={{ p: 3, backgroundColor: 'white' }}>
               <M3Typography variant="h6" sx={{ fontWeight: 500, mb: 2 }}>
-                Project Information
-          </M3Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {contentItem.project && contentItem.project.color && (
-              <Box
-                sx={{
+                Topic Information
+              </M3Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                {contentItem.project && contentItem.project.color && (
+                  <Box
+                    sx={{
                       width: 20,
                       height: 20,
-                  borderRadius: '50%',
+                      borderRadius: '50%',
                       bgcolor: contentItem.project.color.startsWith('#') ? contentItem.project.color : `#${contentItem.project.color}`,
                       mr: 2
-                }}
-              />
-            )}
+                    }}
+                  />
+                )}
                 <M3Typography variant="body1" sx={{ fontSize: '1rem' }}>
-              {contentItem.project && contentItem.project.name ? contentItem.project.name : `Project #${contentItem.projectId || 'Unknown'}`}
-            </M3Typography>
-          </Box>
-        </Box>
+                  {contentItem.project && contentItem.project.name ? contentItem.project.name : `Topic #${contentItem.projectId || 'Unknown'}`}
+                </M3Typography>
+              </Box>
+            </Box>
 
             <Divider />
 

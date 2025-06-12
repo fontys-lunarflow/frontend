@@ -91,17 +91,17 @@ export async function updateContentItemById(id: number, formData: ContentItem) {
 }
 
 /**
- * Server action to fetch all projects
+ * Server action to fetch all topics (from projects API)
  */
 export async function fetchProjects() {
   try {
-    const projects = await getAllProjects();
-    return { success: true, data: projects };
+    const topics = await getAllProjects();
+    return { success: true, data: topics };
   } catch (error) {
-    console.error('Action: Error fetching projects:', error);
+    console.error('Action: Error fetching topics:', error);
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Failed to fetch projects' 
+      error: error instanceof Error ? error.message : 'Failed to fetch topics'
     };
   }
 } 

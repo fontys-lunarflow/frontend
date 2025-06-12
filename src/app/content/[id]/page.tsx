@@ -214,21 +214,10 @@ export default function ContentDetailPage({ params }: PageProps) {
 
         <Divider sx={{ my: 2 }} />
 
+        {/* Topic Information */}
         <Box sx={{ mb: 2 }}>
-          <M3Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 0.5 }}>
+          <M3Typography variant="h6" sx={{ fontWeight: 500, mb: 1 }}>
             Topic
-          </M3Typography>
-          <M3Typography variant="body1">
-            {contentItem.topic}
-          </M3Typography>
-        </Box>
-
-        <Divider sx={{ my: 2 }} />
-
-        {/* Project Information */}
-        <Box sx={{ mb: 2 }}>
-          <M3Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 0.5 }}>
-            Project
           </M3Typography>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             {contentItem.project && contentItem.project.color && (
@@ -243,7 +232,7 @@ export default function ContentDetailPage({ params }: PageProps) {
               />
             )}
             <M3Typography variant="body1">
-              {contentItem.project && contentItem.project.name ? contentItem.project.name : `Project #${contentItem.projectId || 'Unknown'}`}
+              {contentItem.project && contentItem.project.name ? contentItem.project.name : `Topic #${contentItem.projectId || 'Unknown'}`}
             </M3Typography>
           </Box>
         </Box>
@@ -304,8 +293,8 @@ export default function ContentDetailPage({ params }: PageProps) {
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                 {contentItem.personas.map((persona, index) => (
                   <Chip 
-                    key={index}
-                    label={persona}
+                    key={persona.id || index}
+                    label={typeof persona === 'string' ? persona : persona.name}
                     size="small"
                     icon={<PersonIcon />}
                   />
@@ -326,8 +315,8 @@ export default function ContentDetailPage({ params }: PageProps) {
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                 {contentItem.channels.map((channel, index) => (
                   <Chip 
-                    key={index}
-                    label={channel}
+                    key={channel.id || index}
+                    label={typeof channel === 'string' ? channel : channel.name}
                     size="small"
                     icon={<TagIcon />}
                     variant="outlined"

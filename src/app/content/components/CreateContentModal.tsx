@@ -33,8 +33,8 @@ interface CreateContentModalProps {
   defaultPublicationDate?: string;
 }
 
-// Project interface for the dropdown
-interface Project {
+// Topic interface for the dropdown (maps to Project API)
+interface Topic {
   id: number;
   name: string;
   color?: string;
@@ -48,7 +48,7 @@ const STATUS_OPTIONS = ['BACKLOG', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'];
 // Define validation errors interface
 interface ValidationErrors {
   title?: string;
-  projectId?: string;
+  topicId?: string;
   personResponsibleId?: string;
   publicationDate?: string;
 }
@@ -56,7 +56,7 @@ interface ValidationErrors {
 const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, defaultPublicationDate }) => {
   // Form fields - only the essential ones
   const [title, setTitle] = useState('');
-  const [projectId, setProjectId] = useState<number | ''>('');
+  const [topicId, setTopicId] = useState<number | ''>('');
   const [personResponsibleId, setPersonResponsibleId] = useState('');
   const [lifecycleStage, setLifecycleStage] = useState('AWARENESS');
   const [status, setStatus] = useState('BACKLOG');
@@ -69,15 +69,15 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   
-  // Projects state
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [projectsLoading, setProjectsLoading] = useState(false);
-  const [projectsError, setProjectsError] = useState<string | null>(null);
+  // Topics state
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [topicsLoading, setTopicsLoading] = useState(false);
+  const [topicsError, setTopicsError] = useState<string | null>(null);
 
-  // Fetch projects when the modal opens
+  // Fetch topics when the modal opens
   useEffect(() => {
     if (open) {
-      loadProjects();
+      loadTopics();
     }
   }, [open]);
 
@@ -91,8 +91,8 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
     switch (field) {
       case 'title':
         return !value ? 'Title is required' : undefined;
-      case 'projectId':
-        return value === '' ? 'Project is required' : undefined;
+      case 'topicId':
+        return value === '' ? 'Topic is required' : undefined;
       case 'personResponsibleId':
         return !value ? 'Person responsible is required' : undefined;
       case 'publicationDate':
@@ -112,7 +112,7 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
     const errors: ValidationErrors = {};
     
     errors.title = validateField('title', title);
-    errors.projectId = validateField('projectId', projectId);
+    errors.topicId = validateField('topicId', topicId);
     errors.personResponsibleId = validateField('personResponsibleId', personResponsibleId);
     
     if (publicationDate) {
@@ -125,29 +125,29 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
     return !Object.values(errors).some(error => error !== undefined);
   };
 
-  const loadProjects = async () => {
+  const loadTopics = async () => {
     try {
-      setProjectsLoading(true);
-      setProjectsError(null);
+      setTopicsLoading(true);
+      setTopicsError(null);
       
       const result = await fetchProjects();
       
       if (result.success) {
-        console.log("Projects loaded:", result.data);
-        setProjects(result.data || []);
-        // Set default project if available
-        if (result.data && result.data.length > 0 && !projectId) {
-          console.log("Setting default project ID:", result.data[0].id);
-          setProjectId(result.data[0].id);
+        console.log("Topics loaded:", result.data);
+        setTopics(result.data || []);
+        // Set default topic if available
+        if (result.data && result.data.length > 0 && !topicId) {
+          console.log("Setting default topic ID:", result.data[0].id);
+          setTopicId(result.data[0].id);
         }
       } else {
-        throw new Error(result.error || 'Failed to load projects');
+        throw new Error(result.error || 'Failed to load topics');
       }
     } catch (err) {
-      console.error('Error loading projects:', err);
-      setProjectsError(err instanceof Error ? err.message : 'Failed to load projects');
+      console.error('Error loading topics:', err);
+      setTopicsError(err instanceof Error ? err.message : 'Failed to load topics');
     } finally {
-      setProjectsLoading(false);
+      setTopicsLoading(false);
     }
   };
 
@@ -168,18 +168,18 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
         return;
       }
       
-      // Ensure the projectId is a valid number
-      const numericProjectId = Number(projectId);
-      if (isNaN(numericProjectId)) {
-        setError('Invalid project selection');
+      // Ensure the topicId is a valid number
+      const numericTopicId = Number(topicId);
+      if (isNaN(numericTopicId)) {
+        setError('Invalid topic selection');
         setLoading(false);
         return;
       }
 
-      // Find the selected project to include project details
-      const selectedProject = projects.find(p => p.id === numericProjectId);
-      if (!selectedProject) {
-        setError('Selected project not found');
+      // Find the selected topic to include topic details
+      const selectedTopic = topics.find(t => t.id === numericTopicId);
+      if (!selectedTopic) {
+        setError('Selected topic not found');
         setLoading(false);
         return;
       }
@@ -188,9 +188,9 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
       const contentItem: ContentItem = {
         title,
         project: {
-          id: selectedProject.id,
-          name: selectedProject.name,
-          color: selectedProject.color
+          id: selectedTopic.id,
+          name: selectedTopic.name,
+          color: selectedTopic.color
         },
         personResponsibleId,
         contentTypeIds: [], // Empty for now, can be added later if needed
@@ -211,7 +211,7 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
         
         // Reset form
         setTitle('');
-        setProjectId('');
+        setTopicId('');
         setPersonResponsibleId('');
         setLifecycleStage('AWARENESS');
         setStatus('BACKLOG');
@@ -245,7 +245,7 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
 
   const handleClose = () => {
     setTitle('');
-    setProjectId('');
+    setTopicId('');
     setPersonResponsibleId('');
     setLifecycleStage('AWARENESS');
     setStatus('BACKLOG');
@@ -322,54 +322,54 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
             <FormControl 
               fullWidth 
               required 
-              error={!!projectsError || (touched.projectId && !!validationErrors.projectId)}
+              error={!!topicsError || (touched.topicId && !!validationErrors.topicId)}
             >
-              <InputLabel id="project-select-label">Project</InputLabel>
+              <InputLabel id="topic-select-label">Topic</InputLabel>
               <Select
-                labelId="project-select-label"
-                id="project-select"
-                value={projectId}
-                label="Project"
+                labelId="topic-select-label"
+                id="topic-select"
+                value={topicId}
+                label="Topic"
                 onChange={(e) => {
                   const value = e.target.value;
-                  console.log("Selected project value:", value);
-                  setProjectId(value as number);
-                  handleFieldTouch('projectId');
+                  console.log("Selected topic value:", value);
+                  setTopicId(value as number);
+                  handleFieldTouch('topicId');
                 }}
-                onBlur={() => handleFieldTouch('projectId')}
-                disabled={projectsLoading}
+                onBlur={() => handleFieldTouch('topicId')}
+                disabled={topicsLoading}
                 startAdornment={
-                  projectsLoading ? (
+                  topicsLoading ? (
                     <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
                   ) : null
                 }
               >
-                {projects.map((project) => (
-                  <MenuItem key={project.id} value={project.id}>
+                {topics.map((topic) => (
+                  <MenuItem key={topic.id} value={topic.id}>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      {project.color && (
+                      {topic.color && (
                         <Box
                           sx={{
                             width: 16,
                             height: 16,
                             borderRadius: '50%',
-                            bgcolor: project.color.startsWith('#') ? project.color : `#${project.color}`,
+                            bgcolor: topic.color.startsWith('#') ? topic.color : `#${topic.color}`,
                             mr: 1
                           }}
                         />
                       )}
-                      {project.name}
+                      {topic.name}
                     </Box>
                   </MenuItem>
                 ))}
-                {projects.length === 0 && !projectsLoading && (
+                {topics.length === 0 && !topicsLoading && (
                   <MenuItem disabled value="">
-                    No projects available
+                    No topics available
                   </MenuItem>
                 )}
               </Select>
-              {projectsError && <FormHelperText>{projectsError}</FormHelperText>}
-              {touched.projectId && validationErrors.projectId && <FormHelperText>{validationErrors.projectId}</FormHelperText>}
+              {topicsError && <FormHelperText>{topicsError}</FormHelperText>}
+              {touched.topicId && validationErrors.topicId && <FormHelperText>{validationErrors.topicId}</FormHelperText>}
             </FormControl>
 
             <TextField

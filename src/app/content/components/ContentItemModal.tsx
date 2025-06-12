@@ -223,16 +223,9 @@ const ContentItemModal: React.FC<ContentItemModalProps> = ({
               )}
               
               {/* Topic */}
-              {contentItem.topic && (
-                <M3Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-                  Topic: {contentItem.topic}
-                </M3Typography>
-              )}
-              
-              {/* Project */}
               {contentItem.project && (
                 <M3Typography variant="body2" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                  Project: 
+                  Topic: 
                   <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
                     <Box
                       component="span"

@@ -23,7 +23,8 @@ import {
   Select,
   MenuItem,
   FormHelperText,
-  Autocomplete
+  Autocomplete,
+  Typography
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -46,14 +47,17 @@ const STATUS_OPTIONS = ['BACKLOG', 'IN_PROGRESS', 'REVIEW', 'COMPLETED'];
 // Interface for the form data - updated to use labels instead of personas/channels
 interface ContentItemForm {
   title: string;
-  projectId: number;
-  personResponsibleId: string;
-  gitlabIssueUrl: string | null;
-  gitlabId: number | null;
-  lifecycleStage: string;
+  subject: string;
+  description: string;
   status: string;
-  labels: Label[];
+  lifecycleStage: string;
+  topicId: number;
+  personResponsibleId: string;
   publicationDate: Date | null;
+  gitlabId?: number;
+  gitlabIssueUrl?: string;
+  content?: string;
+  labels: Label[];
 }
 
 export default function EditContentPage() {
@@ -72,20 +76,23 @@ export default function EditContentPage() {
   // Form state with default values - only essential fields
   const [formData, setFormData] = useState<ContentItemForm>({
     title: '',
-    projectId: 1,
-    personResponsibleId: '',
-    gitlabIssueUrl: null,
-    gitlabId: null,
-    lifecycleStage: 'AWARENESS',
+    subject: '',
+    description: '',
     status: 'BACKLOG',
-    labels: [],
-    publicationDate: null
+    lifecycleStage: 'AWARENESS',
+    topicId: 1,
+    personResponsibleId: '',
+    publicationDate: null,
+    gitlabId: undefined,
+    gitlabIssueUrl: undefined,
+    content: '',
+    labels: []
   });
   
-  // Projects state
-  const [projects, setProjects] = useState<{id: number, name: string, color?: string}[]>([]);
-  const [projectsLoading, setProjectsLoading] = useState(false);
-  const [projectsError, setProjectsError] = useState<string | null>(null);
+  // Topics state
+  const [topics, setTopics] = useState<{id: number, name: string, color?: string}[]>([]);
+  const [topicsLoading, setTopicsLoading] = useState(false);
+  const [topicsError, setTopicsError] = useState<string | null>(null);
   
   // Labels state
   const [availableLabels, setAvailableLabels] = useState<Label[]>([]);
@@ -104,7 +111,7 @@ export default function EditContentPage() {
         const numericId = parseInt(id, 10);
         
         // Load all data in parallel for better performance
-        const [contentResult, projectsResult, labelsResult] = await Promise.allSettled([
+        const [contentResult, topicsResult, labelsResult] = await Promise.allSettled([
           getContentItem(numericId),
           fetchProjects(),
           fetchLabels()
@@ -118,29 +125,32 @@ export default function EditContentPage() {
           // Format the data for the form - only essential fields
           setFormData({
             title: data.title || '',
-            projectId: typeof data.projectId === 'number' ? data.projectId : (data.project?.id || 1),
-            personResponsibleId: data.personResponsibleId || '',
-            gitlabIssueUrl: data.gitlabIssueUrl || null,
-            gitlabId: data.gitlabId || null,
-            lifecycleStage: data.lifecycleStage || 'AWARENESS',
+            subject: data.subject || '',
+            description: data.description || '',
             status: data.status || 'BACKLOG',
-            labels: data.labels || [],
-            publicationDate: data.publicationDate ? new Date(data.publicationDate) : null
+            lifecycleStage: data.lifecycleStage || 'AWARENESS',
+            topicId: typeof data.projectId === 'number' ? data.projectId : (data.project?.id || 1),
+            personResponsibleId: data.personResponsibleId || '',
+            publicationDate: data.publicationDate ? new Date(data.publicationDate) : null,
+            gitlabId: data.gitlabId || undefined,
+            gitlabIssueUrl: data.gitlabIssueUrl || '',
+            content: data.content || '',
+            labels: data.labels || []
           });
         } else {
           console.error('Failed to fetch content item:', contentResult.status === 'fulfilled' ? contentResult.value.error : contentResult.reason);
           setError('Failed to load content item');
         }
         
-        // Handle projects result
-        if (projectsResult.status === 'fulfilled' && projectsResult.value.success && projectsResult.value.data) {
-          setProjects(projectsResult.value.data);
-          setProjectsError(null);
+        // Handle topics result
+        if (topicsResult.status === 'fulfilled' && topicsResult.value.success && topicsResult.value.data) {
+          setTopics(topicsResult.value.data);
+          setTopicsError(null);
         } else {
-          console.error('Failed to fetch projects:', projectsResult.status === 'fulfilled' ? projectsResult.value.error : projectsResult.reason);
-          setProjectsError('Failed to load projects');
+          console.error('Failed to fetch topics:', topicsResult.status === 'fulfilled' ? topicsResult.value.error : topicsResult.reason);
+          setTopicsError('Failed to load topics');
         }
-        setProjectsLoading(false);
+        setTopicsLoading(false);
         
         // Handle labels result
         if (labelsResult.status === 'fulfilled') {
@@ -180,16 +190,19 @@ export default function EditContentPage() {
       // Prepare the data for the API - send projectId instead of project object
       const updateData = {
         title: formData.title,
-        projectId: formData.projectId,
+        subject: formData.subject,
+        description: formData.description,
+        status: formData.status,
+        lifecycleStage: formData.lifecycleStage,
+        topicId: formData.topicId,
         personResponsibleId: formData.personResponsibleId,
         contentTypeIds: [], // Backend expects this field
         personaIds: [], // Backend expects this field
         gitlabIssueUrl: formData.gitlabIssueUrl,
         gitlabId: formData.gitlabId,
-        lifecycleStage: formData.lifecycleStage,
-        status: formData.status,
         labelIds: formData.labels.map(l => l.id),
-        publicationDate: formData.publicationDate ? formData.publicationDate.toISOString() : undefined
+        publicationDate: formData.publicationDate ? formData.publicationDate.toISOString() : undefined,
+        content: formData.content || ''
       };
       
       console.log('Updating content item with data:', updateData);
@@ -235,27 +248,27 @@ export default function EditContentPage() {
     }
   }, [id, router]);
   
-  // Memoize the project options to prevent unnecessary re-renders
-  const projectOptions = useMemo(() => {
-    return projects.map((project) => (
-      <MenuItem key={project.id} value={project.id}>
+  // Memoize the topic options to prevent unnecessary re-renders
+  const topicOptions = useMemo(() => {
+    return topics.map((topic) => (
+      <MenuItem key={topic.id} value={topic.id}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          {project.color && (
+          {topic.color && (
             <Box
               sx={{
                 width: 16,
                 height: 16,
                 borderRadius: '50%',
-                bgcolor: project.color.startsWith('#') ? project.color : `#${project.color}`,
+                bgcolor: topic.color.startsWith('#') ? topic.color : `#${topic.color}`,
                 mr: 1
               }}
             />
           )}
-          {project.name}
+          {topic.name}
         </Box>
       </MenuItem>
     ));
-  }, [projects]);
+  }, [topics]);
   
   // Handle form field changes
   const handleChange = useCallback((field: keyof ContentItemForm, value: unknown) => {
@@ -385,45 +398,47 @@ export default function EditContentPage() {
 
           <Divider />
 
-          {/* Project Selection */}
-                <FormControl fullWidth required error={!!projectsError}>
-            <InputLabel id="project-select-label">Project</InputLabel>
-                  <Select
-                    labelId="project-select-label"
-                    id="project-select"
-                    value={formData.projectId}
-              label="Project"
-                    onChange={(e) => handleChange('projectId', e.target.value)}
-                    disabled={projectsLoading}
-                    startAdornment={
-                      projectsLoading ? (
-                        <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                      ) : null
-                    }
-                  >
-              {projectOptions}
-                    {projects.length === 0 && !projectsLoading && (
-                      <MenuItem disabled value="">
-                        No projects available
-                      </MenuItem>
-                    )}
-                  </Select>
-                  {projectsError && <FormHelperText>{projectsError}</FormHelperText>}
-                </FormControl>
+          {/* Topic Selection */}
+          <FormControl fullWidth required error={!!topicsError}>
+            <InputLabel id="topic-select-label">Topic</InputLabel>
+            <Select
+              labelId="topic-select-label"
+              id="topic-select"
+              value={formData.topicId}
+              label="Topic"
+              onChange={(e) => handleChange('topicId', e.target.value)}
+              disabled={topicsLoading}
+            >
+              {topicsLoading ? (
+                <MenuItem disabled>
+                  <CircularProgress size={20} />
+                  <Typography sx={{ ml: 1 }}>Loading...</Typography>
+                </MenuItem>
+              ) : (
+                topicOptions
+              )}
+              {topics.length === 0 && !topicsLoading && (
+                <MenuItem disabled>
+                  No topics available
+                </MenuItem>
+              )}
+            </Select>
+            {topicsError && <FormHelperText>{topicsError}</FormHelperText>}
+          </FormControl>
 
           <Divider />
 
           {/* Person Responsible */}
-                  <TextField
+          <TextField
             label="Person Responsible"
-                    fullWidth
+            fullWidth
             value={formData.personResponsibleId}
             onChange={(e) => handleChange('personResponsibleId', e.target.value)}
             placeholder="Enter person ID"
             InputProps={{
               startAdornment: <PersonIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />,
             }}
-              />
+          />
 
           {/* Publication Date */}
           <Box>
@@ -453,8 +468,8 @@ export default function EditContentPage() {
               {labelsError}
             </Alert>
           )}
-              <Autocomplete
-                multiple
+          <Autocomplete
+            multiple
             options={availableLabels}
             loading={labelsLoading}
             getOptionLabel={(option) => option.name}
@@ -473,11 +488,11 @@ export default function EditContentPage() {
                 {option.name}
               </Box>
             )}
-                renderTags={(value, getTagProps) =>
+            renderTags={(value, getTagProps) =>
               value.map((option, index) => {
                 const { key, ...chipProps } = getTagProps({ index });
                 return (
-                    <Chip
+                  <Chip
                     key={key}
                     label={option.name}
                     icon={<LabelIcon />}
@@ -487,13 +502,13 @@ export default function EditContentPage() {
                       '& .MuiChip-icon': { color: option.color }
                     }}
                     {...chipProps}
-                    />
+                  />
                 );
               })
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
                 label="Labels"
                 placeholder="Add labels"
                 fullWidth
@@ -507,7 +522,7 @@ export default function EditContentPage() {
                   ),
                 }}
               />
-          )}
+            )}
           />
 
           <Divider />
@@ -531,7 +546,7 @@ export default function EditContentPage() {
                 type="number"
                 value={formData.gitlabId || ''}
                 onChange={(e) => {
-                  const value = e.target.value ? parseInt(e.target.value, 10) : null;
+                  const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
                   handleChange('gitlabId', value);
                 }}
               />

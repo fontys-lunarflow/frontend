@@ -246,7 +246,7 @@ export async function updateContentItem(id: number, contentItem: ContentItem): P
 }
 
 /**
- * Project interface for API responses
+ * Topic interface for API responses (maps to Project API)
  */
 export interface Project {
   id: number;
@@ -264,11 +264,11 @@ export interface ContentType {
 }
 
 /**
- * Fetches all projects from the API
+ * Fetches all topics from the projects API endpoint
  */
 export async function getAllProjects(): Promise<Project[]> {
   try {
-    console.log('Server: Fetching all projects');
+    console.log('Server: Fetching all topics');
     
     const response = await fetch(`${API_BASE_URL}/projects`, {
       headers: {
@@ -290,10 +290,10 @@ export async function getAllProjects(): Promise<Project[]> {
     }
     
     const projects = await response.json();
-    console.log('Server: Fetched projects successfully');
+    console.log('Server: Fetched topics successfully');
     return projects;
   } catch (error) {
-    console.error('Server: Failed to fetch projects:', error);
+    console.error('Server: Failed to fetch topics:', error);
     throw error;
   }
 }
