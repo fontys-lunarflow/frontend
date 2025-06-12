@@ -2,14 +2,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files first for better caching
-COPY package.json package-lock.json* ./
-
-# Install all dependencies
-RUN npm ci
-
 # Copy source code
 COPY . .
+
+RUN npm ci
+
+RUN npm run build
 
 # Expose port
 EXPOSE 3000
@@ -19,4 +17,4 @@ ENV NODE_ENV=development
 ENV HOSTNAME="0.0.0.0"
 
 # Start in development mode (for now)
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "start"]
