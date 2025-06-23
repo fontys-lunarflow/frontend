@@ -242,6 +242,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
                   sx={{ 
                     width: '100%',
                     opacity: 1,
+                    height: 'auto',
                     transition: theme.transitions.create(['opacity'], {
                       duration: '250ms',
                       easing: theme.transitions.easing.easeOut,
@@ -268,6 +269,12 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
                     },
                     '& .MuiPickersArrowSwitcher-root': {
                       fontSize: '0.9rem',
+                    },
+                    '& .MuiPickersSlideTransition-root': {
+                      minHeight: 'max-content'
+                    },
+                    '& .MuiDayCalendar-monthContainer': {
+                      position: 'relative'
                     }
                   }}
                   views={['day']}
