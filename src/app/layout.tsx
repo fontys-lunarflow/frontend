@@ -32,7 +32,7 @@ const robotoCondensed = Roboto_Condensed({
 });
 
 export const metadata: Metadata = {
-  title: "Material Design 3 Demo",
+  title: "Lunarflow",
   description: "A showcase of Material Design 3 components and typography",
 };
 
