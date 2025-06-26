@@ -33,7 +33,7 @@ const robotoCondensed = Roboto_Condensed({
 
 export const metadata: Metadata = {
   title: "Lunarflow",
-  description: "A showcase of Material Design 3 components and typography",
+  description: "Lunarflow",
 };
 
 export default function RootLayout({

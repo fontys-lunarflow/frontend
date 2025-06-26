@@ -17,15 +17,21 @@ import {
   FormControl,
   InputLabel,
   FormHelperText,
-  CircularProgress
+  CircularProgress,
+  Autocomplete,
+  Chip,
+  Avatar
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
+import LabelIcon from '@mui/icons-material/Label';
 import { ContentItem } from '@/lib/config/api';
 import { createNewContentItem, fetchProjects } from '@/app/content/actions';
+import { fetchLabels, Label } from '@/lib/services/ticketApi';
+import { fetchAllUsers, User } from '@/lib/services/userApi';
 
 interface CreateContentModalProps {
   open: boolean;
@@ -49,7 +55,7 @@ const STATUS_OPTIONS = ['BACKLOG', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'];
 interface ValidationErrors {
   title?: string;
   topicId?: string;
-  personResponsibleId?: string;
+  selectedUser?: string;
   publicationDate?: string;
 }
 
@@ -57,10 +63,11 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
   // Form fields - only the essential ones
   const [title, setTitle] = useState('');
   const [topicId, setTopicId] = useState<number | ''>('');
-  const [personResponsibleId, setPersonResponsibleId] = useState('');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [lifecycleStage, setLifecycleStage] = useState('AWARENESS');
   const [status, setStatus] = useState('BACKLOG');
   const [publicationDate, setPublicationDate] = useState<Date | null>(defaultPublicationDate ? new Date(defaultPublicationDate) : null);
+  const [selectedLabels, setSelectedLabels] = useState<Label[]>([]);
   
   // Form state
   const [loading, setLoading] = useState(false);
@@ -74,10 +81,22 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
   const [topicsLoading, setTopicsLoading] = useState(false);
   const [topicsError, setTopicsError] = useState<string | null>(null);
 
-  // Fetch topics when the modal opens
+  // Labels state
+  const [availableLabels, setAvailableLabels] = useState<Label[]>([]);
+  const [labelsLoading, setLabelsLoading] = useState(false);
+  const [labelsError, setLabelsError] = useState<string | null>(null);
+
+  // Users state
+  const [users, setUsers] = useState<User[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState<string | null>(null);
+
+  // Fetch topics, labels, and users when the modal opens
   useEffect(() => {
     if (open) {
       loadTopics();
+      loadLabels();
+      loadUsers();
     }
   }, [open]);
 
@@ -93,8 +112,6 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
         return !value ? 'Title is required' : undefined;
       case 'topicId':
         return value === '' ? 'Topic is required' : undefined;
-      case 'personResponsibleId':
-        return !value ? 'Person responsible is required' : undefined;
       case 'publicationDate':
         if (value) {
           const dateValue = new Date(value);
@@ -113,7 +130,7 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
     
     errors.title = validateField('title', title);
     errors.topicId = validateField('topicId', topicId);
-    errors.personResponsibleId = validateField('personResponsibleId', personResponsibleId);
+    errors.selectedUser = !selectedUser ? 'Person responsible is required' : undefined;
     
     if (publicationDate) {
       errors.publicationDate = validateField('publicationDate', publicationDate);
@@ -148,6 +165,38 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
       setTopicsError(err instanceof Error ? err.message : 'Failed to load topics');
     } finally {
       setTopicsLoading(false);
+    }
+  };
+
+  const loadLabels = async () => {
+    try {
+      setLabelsLoading(true);
+      setLabelsError(null);
+      
+      const labels = await fetchLabels();
+      setAvailableLabels(labels);
+      console.log('Loaded labels:', labels);
+    } catch (err) {
+      console.error('Failed to load labels:', err);
+      setLabelsError('Failed to load labels');
+    } finally {
+      setLabelsLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      setUsersLoading(true);
+      setUsersError(null);
+      
+      const users = await fetchAllUsers();
+      setUsers(users);
+      console.log('Loaded users:', users);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+      setUsersError('Failed to load users');
+    } finally {
+      setUsersLoading(false);
     }
   };
 
@@ -192,10 +241,10 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
           name: selectedTopic.name,
           color: selectedTopic.color
         },
-        personResponsibleId,
+        personResponsibleId: selectedUser?.id || '',
         contentTypeIds: [], // Empty for now, can be added later if needed
         personaIds: [], // Empty for now, can be added later if needed  
-        labelIds: [], // Empty for now, can be added later if needed
+        labelIds: selectedLabels.map(l => l.id),
         status,
         lifecycleStage,
         publicationDate: publicationDate?.toISOString()
@@ -212,10 +261,11 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
         // Reset form
         setTitle('');
         setTopicId('');
-        setPersonResponsibleId('');
+        setSelectedUser(null);
         setLifecycleStage('AWARENESS');
         setStatus('BACKLOG');
         setPublicationDate(null);
+        setSelectedLabels([]);
         setValidationErrors({});
         setTouched({});
         
@@ -246,10 +296,11 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
   const handleClose = () => {
     setTitle('');
     setTopicId('');
-    setPersonResponsibleId('');
+    setSelectedUser(null);
     setLifecycleStage('AWARENESS');
     setStatus('BACKLOG');
     setPublicationDate(null);
+    setSelectedLabels([]);
     setError(null);
     setValidationErrors({});
     setTouched({});
@@ -372,21 +423,68 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
               {touched.topicId && validationErrors.topicId && <FormHelperText>{validationErrors.topicId}</FormHelperText>}
             </FormControl>
 
-            <TextField
-              label="Person Responsible"
-              fullWidth
-              value={personResponsibleId}
-              onChange={(e) => {
-                setPersonResponsibleId(e.target.value);
-                handleFieldTouch('personResponsibleId');
+            {/* Person Responsible */}
+            {usersError && (
+              <Alert severity="warning" sx={{ mb: 1 }}>
+                {usersError}
+              </Alert>
+            )}
+            <Autocomplete
+              id="person-responsible-select"
+              value={selectedUser}
+              onChange={(_, newValue) => {
+                setSelectedUser(newValue);
+                handleFieldTouch('selectedUser');
               }}
-              onBlur={() => handleFieldTouch('personResponsibleId')}
-              required
-              error={touched.personResponsibleId && !!validationErrors.personResponsibleId}
-              helperText={touched.personResponsibleId && validationErrors.personResponsibleId}
-              InputProps={{
-                startAdornment: <PersonIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />,
+              onBlur={() => handleFieldTouch('selectedUser')}
+              disabled={usersLoading}
+              options={users}
+              getOptionLabel={(option) => {
+                if (option.firstName && option.lastName) {
+                  return `${option.firstName} ${option.lastName} (${option.username})`;
+                }
+                return option.username;
               }}
+              renderOption={(props, option) => (
+                <Box component="li" {...props} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem' }}>
+                    {(option.firstName?.[0] || option.username[0]).toUpperCase()}
+                  </Avatar>
+                  <Box>
+                    <Box component="span" sx={{ fontWeight: 500 }}>
+                      {option.firstName && option.lastName 
+                        ? `${option.firstName} ${option.lastName}` 
+                        : option.username}
+                    </Box>
+                    {option.firstName && option.lastName && (
+                      <Box component="span" sx={{ color: 'text.secondary', ml: 1, fontSize: '0.875rem' }}>
+                        ({option.username})
+                      </Box>
+                    )}
+                  </Box>
+                </Box>
+              )}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Person Responsible"
+                  placeholder="Select a person"
+                  fullWidth
+                  required
+                  error={touched.selectedUser && !!validationErrors.selectedUser}
+                  helperText={touched.selectedUser && validationErrors.selectedUser}
+                  InputProps={{
+                    ...params.InputProps,
+                    startAdornment: (
+                      <>
+                        <PersonIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
+                        {usersLoading ? <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} /> : null}
+                        {params.InputProps.startAdornment}
+                      </>
+                    ),
+                  }}
+                />
+              )}
             />
 
             <Box sx={{ display: 'flex', gap: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
@@ -444,6 +542,69 @@ const CreateContentModal: React.FC<CreateContentModalProps> = ({ open, onClose, 
                 }}
               />
             </LocalizationProvider>
+
+            {/* Labels */}
+            {labelsError && (
+              <Alert severity="warning" sx={{ mb: 1 }}>
+                {labelsError}
+              </Alert>
+            )}
+            <Autocomplete
+              multiple
+              options={availableLabels}
+              loading={labelsLoading}
+              getOptionLabel={(option) => option.name}
+              value={selectedLabels}
+              onChange={(_, newValue) => setSelectedLabels(newValue)}
+              renderOption={(props, option) => (
+                <Box component="li" {...props} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box
+                    sx={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: '50%',
+                      bgcolor: option.color,
+                    }}
+                  />
+                  {option.name}
+                </Box>
+              )}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => {
+                  const { key, ...chipProps } = getTagProps({ index });
+                  return (
+                    <Chip
+                      key={key}
+                      label={option.name}
+                      icon={<LabelIcon />}
+                      sx={{
+                        backgroundColor: option.color + '30', // Add transparency
+                        borderColor: option.color,
+                        '& .MuiChip-icon': { color: option.color }
+                      }}
+                      {...chipProps}
+                    />
+                  );
+                })
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Labels"
+                  placeholder="Add labels"
+                  fullWidth
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {labelsLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  }}
+                />
+              )}
+            />
           </Stack>
         </DialogContent>
 

@@ -145,6 +145,7 @@ export default function HomePage() {
           flexDirection: 'column',
           backgroundColor: '#f5f5f5',
           minHeight: 'calc(100vh - 64px)',
+          maxWidth: open ? 'calc(100vw - 304px)' : '100vw', // Responsive width based on sidebar state
           overflow: 'auto',
           // Hide scrollbar for main content - all browsers
           '&::-webkit-scrollbar': {
@@ -174,7 +175,7 @@ export default function HomePage() {
           }}
           sx={{
             width: '100%',
-            height: 'calc(100vh)',
+            flex: 1, // Use flex instead of fixed height
             display: 'flex',
             flexDirection: 'column',
             backgroundColor: colors.white,
@@ -182,6 +183,7 @@ export default function HomePage() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             overflow: 'auto',
             padding: '16px 24px',
+            minHeight: 0, // Allow flex shrinking
             // Hide scrollbar for white card container - all browsers
             '&::-webkit-scrollbar': {
               display: 'none',
