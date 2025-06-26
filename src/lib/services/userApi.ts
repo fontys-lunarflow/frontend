@@ -1,7 +1,7 @@
-import { CLIENT_USER_API_BASE_URL } from '../config/api';
+import { CLIENT_USER_API_BASE_URL } from '@/lib/config/api';
 
 /**
- * User interface based on user API documentation
+ * User interface matching the Keycloak user-api response structure
  */
 export interface User {
   id: string; // Keycloak ID
@@ -40,20 +40,15 @@ export async function fetchAllUsers(): Promise<User[]> {
     console.log('User API: Response status:', response.status);
     
     if (!response.ok) {
-      // If we get a 404 or other error, fall back to mock users for development
-      if (response.status === 404 || response.status >= 500) {
-        console.warn('User API: Not accessible, using mock users for development');
-        return getMockUsers();
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`Failed to fetch users: HTTP ${response.status}`);
     }
     
     const users: User[] = await response.json();
     console.log('User API: Fetched users successfully, count:', users?.length || 0);
     return users || [];
   } catch (error) {
-    console.error('User API: Failed to fetch users, using mock users:', error);
-    return getMockUsers();
+    console.error('User API: Failed to fetch users:', error);
+    throw error; // Re-throw to handle at component level
   }
 }
 
@@ -75,12 +70,13 @@ export async function fetchUserById(id: string): Promise<User | null> {
     
     console.log('User API: Response status:', response.status);
     
+    if (response.status === 404) {
+      console.warn('User API: User not found with ID:', id);
+      return null;
+    }
+    
     if (!response.ok) {
-      if (response.status === 404) {
-        console.warn('User API: User not found with ID:', id);
-        return null;
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`Failed to fetch user by ID: HTTP ${response.status}`);
     }
     
     const user: User = await response.json();
@@ -110,12 +106,13 @@ export async function fetchUserByUsername(username: string): Promise<User | null
     
     console.log('User API: Response status:', response.status);
     
+    if (response.status === 404) {
+      console.warn('User API: User not found with username:', username);
+      return null;
+    }
+    
     if (!response.ok) {
-      if (response.status === 404) {
-        console.warn('User API: User not found with username:', username);
-        return null;
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`Failed to fetch user by username: HTTP ${response.status}`);
     }
     
     const user: User = await response.json();
@@ -145,12 +142,13 @@ export async function fetchUsersByGroup(groupName: string): Promise<User[]> {
     
     console.log('User API: Response status:', response.status);
     
+    if (response.status === 404) {
+      console.warn('User API: Group not found:', groupName);
+      return [];
+    }
+    
     if (!response.ok) {
-      if (response.status === 404) {
-        console.warn('User API: Group not found:', groupName);
-        return [];
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`Failed to fetch users by group: HTTP ${response.status}`);
     }
     
     const users: User[] = await response.json();
@@ -160,57 +158,4 @@ export async function fetchUsersByGroup(groupName: string): Promise<User[]> {
     console.error('User API: Failed to fetch users by group:', error);
     return [];
   }
-}
-
-/**
- * Returns mock users for development when User API is not accessible
- */
-function getMockUsers(): User[] {
-  return [
-    {
-      id: "user-001",
-      username: "john.doe",
-      email: "john.doe@company.com",
-      firstName: "John",
-      lastName: "Doe",
-      groups: ["content-creators", "editors"],
-      enabled: true
-    },
-    {
-      id: "user-002", 
-      username: "jane.smith",
-      email: "jane.smith@company.com",
-      firstName: "Jane",
-      lastName: "Smith",
-      groups: ["content-creators", "reviewers"],
-      enabled: true
-    },
-    {
-      id: "user-003",
-      username: "mike.johnson",
-      email: "mike.johnson@company.com", 
-      firstName: "Mike",
-      lastName: "Johnson",
-      groups: ["editors", "admins"],
-      enabled: true
-    },
-    {
-      id: "user-004",
-      username: "sarah.wilson",
-      email: "sarah.wilson@company.com",
-      firstName: "Sarah", 
-      lastName: "Wilson",
-      groups: ["content-creators"],
-      enabled: true
-    },
-    {
-      id: "user-005",
-      username: "david.brown",
-      email: "david.brown@company.com",
-      firstName: "David",
-      lastName: "Brown", 
-      groups: ["reviewers", "editors"],
-      enabled: true
-    }
-  ];
 } 
