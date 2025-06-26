@@ -7,13 +7,10 @@ export const API_BASE_URL = process.env.API_BASE_URL || 'http://content-service:
 export const TICKET_API_BASE_URL = process.env.TICKET_API_BASE_URL || 'http://ticket-api:8080';
 export const USER_API_BASE_URL = process.env.USER_API_BASE_URL || 'http://user-api:8080';
 
-// Client-side API URLs (for browser requests) - these should use localhost or cluster URLs
-export const CLIENT_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
-export const CLIENT_TICKET_API_BASE_URL = process.env.NEXT_PUBLIC_TICKET_API_BASE_URL || 'http://localhost:5001';
-export const CLIENT_USER_API_BASE_URL = process.env.NEXT_PUBLIC_USER_API_BASE_URL || 
-  (process.env.NODE_ENV === 'production' && process.env.KUBERNETES_CLUSTER === 'true'
-    ? 'http://user-api.lunarflow.svc.cluster.local:8080'
-    : 'http://localhost:5002');
+// Client-side API URLs (for browser requests) - these should use your actual domain URLs
+export const CLIENT_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://content-api.luxdomain.work';
+export const CLIENT_TICKET_API_BASE_URL = process.env.NEXT_PUBLIC_TICKET_API_BASE_URL || 'https://ticket-api.luxdomain.work';
+export const CLIENT_USER_API_BASE_URL = process.env.NEXT_PUBLIC_USER_API_BASE_URL || 'https://user-api.luxdomain.work';
 
 /**
  * Label interface for ticket API integration
